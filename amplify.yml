@@ -3,12 +3,14 @@ frontend:
   phases:
     preBuild:
       commands:
-        # Use Node 18 to ensure Vite works
+        # Use Node 18 to ensure Vite works properly
         - nvm install 18
         - nvm use 18
+        # Install dependencies using package-lock.json
         - npm ci
     build:
       commands:
+        # Build the project with Vite
         - npm run build
   artifacts:
     # Vite outputs production files here
@@ -17,5 +19,5 @@ frontend:
       - '**/*'
   cache:
     paths:
-      # Cache dependencies for faster builds
-      - node_modules/**/* 
+      # Cache dependencies to speed up future builds
+      - node_modules/**/*
