@@ -1,13 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import QuestionCard, { Question as QType } from '../components/QuestionCard'
 import { API, Amplify } from 'aws-amplify'
-import Auth from '@aws-amplify/auth'
 import * as awsconfig from '../aws-exports'
+import { getCurrentUser } from '../aws-amplify'
 import { listQuestions } from '../graphql/queries'
 import { createAnswerAttempt } from '../graphql/mutations'
 import type { ListQuestionsQuery } from '../graphql/types'
 
-// Initialize Amplify
 Amplify.configure(awsconfig)
 
 const FALLBACK: QType[] = [
@@ -44,15 +43,15 @@ export default function Quiz() {
 
   useEffect(() => {
     ;(async () => {
-      // Get authenticated user
+      // Get current authenticated user
       try {
-        const authUser = await Auth.currentAuthenticatedUser()
+        const authUser = await getCurrentUser()
         setUserId(authUser?.attributes?.sub ?? authUser?.username ?? null)
       } catch (err) {
         console.warn('Auth not ready or user not signed in', err)
       }
 
-      // Fetch questions
+      // Fetch questions from API
       try {
         const resp: any = await API.graphql({ query: listQuestions })
         const items = (resp?.data?.listQuestions?.items as any[]) || []
@@ -117,7 +116,9 @@ export default function Quiz() {
 
       {lastResult && (
         <div className="card" style={{ marginTop: 12 }}>
-          <strong>{lastResult.correct ? 'Correct ✅' : lastResult.correct === false ? 'Incorrect ❌' : 'Recorded ✅'}</strong>
+          <strong>
+            {lastResult.correct ? 'Correct ✅' : lastResult.correct === false ? 'Incorrect ❌' : 'Recorded ✅'}
+          </strong>
           {current.explanation && <p className="muted">{current.explanation}</p>}
         </div>
       )}
