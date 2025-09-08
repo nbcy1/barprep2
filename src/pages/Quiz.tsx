@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import QuestionCard, { Question as QType } from '../components/QuestionCard'
 import { API, Auth, Amplify } from 'aws-amplify'
-import awsconfig from '../aws-exports'
+import { awsconfig } from '../aws-exports'   // <- named import
 import { listQuestions } from '../graphql/queries'
 import { createAnswerAttempt } from '../graphql/mutations'
 import type { ListQuestionsQuery } from '../graphql/types'
 
-Amplify.configure(awsconfig)
+Amplify.configure(awsconfig)  // configure Amplify at the top level
 
 const FALLBACK: QType[] = [
   {
@@ -42,7 +42,6 @@ export default function Quiz() {
 
   useEffect(() => {
     ;(async () => {
-      // try get auth user id
       try {
         const authUser = await Auth.currentAuthenticatedUser()
         setUserId(authUser?.attributes?.sub ?? authUser?.username ?? null)
@@ -50,7 +49,6 @@ export default function Quiz() {
         console.warn('Auth not ready or user not signed in', err)
       }
 
-      // fetch questions from GraphQL API
       try {
         const resp: any = await API.graphql({ query: listQuestions })
         const items = (resp?.data?.listQuestions?.items as any[]) || []
@@ -81,7 +79,6 @@ export default function Quiz() {
     const isCorrect = typeof current.correctIndex === 'number' ? selected === current.correctIndex : null
     setLastResult({ correct: isCorrect, explanation: current.explanation })
 
-    // record attempt if possible
     if (userId) {
       try {
         const input = {
@@ -117,11 +114,7 @@ export default function Quiz() {
       {lastResult && (
         <div className="card" style={{ marginTop: 12 }}>
           <strong>
-            {lastResult.correct
-              ? 'Correct ✅'
-              : lastResult.correct === false
-              ? 'Incorrect ❌'
-              : 'Recorded ✅'}
+            {lastResult.correct ? 'Correct ✅' : lastResult.correct === false ? 'Incorrect ❌' : 'Recorded ✅'}
           </strong>
           {current.explanation && <p className="muted">{current.explanation}</p>}
         </div>
