@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import QuestionCard, { Question as QType } from '../components/QuestionCard'
-import { API, Auth } from 'aws-amplify'
+import { API } from 'aws-amplify'
+import { Auth } from '@aws-amplify/auth'
 import { listQuestions } from '../graphql/queries'
 import { createAnswerAttempt } from '../graphql/mutations'
 import type { ListQuestionsQuery } from '../graphql/types'
