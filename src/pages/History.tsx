@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { API, Auth } from 'aws-amplify'
+import { API } from 'aws-amplify'
+import { Auth } from '@aws-amplify/auth'
 import { listAnswerAttempts } from '../graphql/queries'
 
 type Attempt = {
