@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import QuestionCard, { Question as QType } from '../components/QuestionCard'
 import { API, Amplify } from 'aws-amplify'
-import { Auth } from '@aws-amplify/auth'
+import Auth from '@aws-amplify/auth'
 import * as awsconfig from '../aws-exports'
 import { listQuestions } from '../graphql/queries'
 import { createAnswerAttempt } from '../graphql/mutations'
 import type { ListQuestionsQuery } from '../graphql/types'
 
-// configure Amplify
+// Initialize Amplify
 Amplify.configure(awsconfig)
 
 const FALLBACK: QType[] = [
@@ -44,6 +44,7 @@ export default function Quiz() {
 
   useEffect(() => {
     ;(async () => {
+      // Get authenticated user
       try {
         const authUser = await Auth.currentAuthenticatedUser()
         setUserId(authUser?.attributes?.sub ?? authUser?.username ?? null)
@@ -51,6 +52,7 @@ export default function Quiz() {
         console.warn('Auth not ready or user not signed in', err)
       }
 
+      // Fetch questions
       try {
         const resp: any = await API.graphql({ query: listQuestions })
         const items = (resp?.data?.listQuestions?.items as any[]) || []
