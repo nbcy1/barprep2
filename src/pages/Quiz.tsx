@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import QuestionCard, { Question as QType } from '../components/QuestionCard'
-import { API, Auth, Amplify } from 'aws-amplify'
+import { API, Amplify } from 'aws-amplify'
+import { Auth } from '@aws-amplify/auth'
 import * as awsconfig from '../aws-exports'
 import { listQuestions } from '../graphql/queries'
 import { createAnswerAttempt } from '../graphql/mutations'
@@ -43,7 +44,6 @@ export default function Quiz() {
 
   useEffect(() => {
     ;(async () => {
-      // get authenticated user id
       try {
         const authUser = await Auth.currentAuthenticatedUser()
         setUserId(authUser?.attributes?.sub ?? authUser?.username ?? null)
@@ -51,7 +51,6 @@ export default function Quiz() {
         console.warn('Auth not ready or user not signed in', err)
       }
 
-      // fetch questions from GraphQL API
       try {
         const resp: any = await API.graphql({ query: listQuestions })
         const items = (resp?.data?.listQuestions?.items as any[]) || []
