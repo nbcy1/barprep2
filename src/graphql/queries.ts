@@ -1,5 +1,6 @@
-// Minimal placeholder GraphQL query for listing questions.
-// After you `amplify push` and run `amplify codegen`, replace this with generated queries
+// src/graphql/queries.ts
+
+// Query for questions
 export const listQuestions = /* GraphQL */ `
   query ListQuestions {
     listQuestions {
@@ -10,6 +11,22 @@ export const listQuestions = /* GraphQL */ `
         options
         explanation
         correctIndex
+      }
+    }
+  }
+`
+
+// Query for answer attempts (needed by History.tsx)
+export const listAnswerAttempts = /* GraphQL */ `
+  query ListAnswerAttempts($filter: ModelAnswerAttemptFilterInput) {
+    listAnswerAttempts(filter: $filter) {
+      items {
+        id
+        questionID
+        category
+        selectedIndex
+        isCorrect
+        createdAt
       }
     }
   }
