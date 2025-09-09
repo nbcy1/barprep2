@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
-import { API } from 'aws-amplify'
-import { Auth } from '@aws-amplify/auth'
+import { API, Auth } from 'aws-amplify' // ✅ fixed import
 import { listAnswerAttempts } from '../graphql/queries'
 
 type Attempt = {
@@ -21,10 +20,12 @@ export default function History() {
       try {
         const user = await Auth.currentAuthenticatedUser()
         const userId = user?.attributes?.sub ?? user?.username
+
         const res: any = await API.graphql({
           query: listAnswerAttempts,
           variables: { filter: { userID: { eq: userId } } }
         })
+
         setAttempts(res?.data?.listAnswerAttempts?.items || [])
       } catch (err) {
         console.error('Failed to load history', err)
@@ -45,12 +46,4 @@ export default function History() {
           <li key={a.id} style={{ marginBottom: 8 }}>
             <div>
               <strong>{a.category ?? 'Unknown Category'}</strong> —{' '}
-              {a.isCorrect ? '✅ Correct' : '❌ Incorrect'}
-            </div>
-            <small className="muted">{new Date(a.createdAt).toLocaleString()}</small>
-          </li>
-        ))}
-      </ul>
-    </div>
-  )
-}
+              {a.isCorrect ?
