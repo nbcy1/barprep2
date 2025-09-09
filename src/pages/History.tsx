@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react'
-import { API, Auth } from 'aws-amplify'
+import { API } from 'aws-amplify'
+import * as AuthModule from '@aws-amplify/auth'
 import { listAnswerAttempts } from '../graphql/queries'
+
+const Auth = AuthModule
 
 type Attempt = {
   id: string
