@@ -1,5 +1,8 @@
+// src/pages/Account.tsx
 import { useEffect, useState } from 'react'
-import { Auth } from 'aws-amplify'
+import * as AuthModule from '@aws-amplify/auth'
+
+const Auth = AuthModule.Auth
 
 export default function Account() {
   const [user, setUser] = useState<any>(null)
@@ -8,10 +11,10 @@ export default function Account() {
   useEffect(() => {
     ;(async () => {
       try {
-        const authUser = await Auth.currentAuthenticatedUser()
-        setUser(authUser)
+        const currentUser = await Auth.currentAuthenticatedUser()
+        setUser(currentUser)
       } catch (err) {
-        console.error('Failed to load user', err)
+        console.error('Failed to fetch user', err)
       } finally {
         setLoading(false)
       }
@@ -20,27 +23,25 @@ export default function Account() {
 
   if (loading) return <div className="page">Loading account info…</div>
 
-  if (!user)
-    return (
-      <div className="page">
-        <p className="muted">No user is currently signed in.</p>
-      </div>
-    )
-
   return (
     <div className="page">
-      <h2>Account Information</h2>
-      <div className="card">
-        <p>
-          <strong>Username:</strong> {user.username}
-        </p>
-        <p>
-          <strong>Email:</strong> {user.attributes?.email ?? 'Not provided'}
-        </p>
-        <p>
-          <strong>Sub:</strong> {user.attributes?.sub}
-        </p>
-      </div>
+      <h2>Account Info</h2>
+      {user ? (
+        <div>
+          <p>
+            <strong>Username:</strong> {user.username}
+          </p>
+          <p>
+            <strong>Email:</strong> {user.attributes?.email ?? 'N/A'}
+          </p>
+          <p>
+            <strong>User ID:</strong> {user.attributes?.sub ?? 'N/A'}
+          </p>
+        </div>
+      ) : (
+        <p className="muted">No user logged in.</p>
+      )}
     </div>
   )
 }
+
