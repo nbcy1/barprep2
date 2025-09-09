@@ -12,3 +12,15 @@ export default function Navbar() {
       <Link to="/dashboard" style={{ marginRight: '1rem' }}>Dashboard</Link>
       <Link to="/history" style={{ marginRight: '1rem' }}>History</Link>
       <Link to="/account" style={{ marginRight: '1rem' }}>Account</Link>
+
+      {user ? (
+        <>
+          <span style={{ marginRight: '1rem' }}>Hello, {user.username}</span>
+          <button onClick={signOut}>Logout</button>
+        </>
+      ) : (
+        <Link to="/login">Login</Link>
+      )}
+    </nav>
+  )
+}
