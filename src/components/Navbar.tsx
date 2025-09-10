@@ -9,8 +9,8 @@ export default function Navbar() {
       <Link to="/dashboard" style={{ marginRight: '1rem' }}>Dashboard</Link>
       <Link to="/history" style={{ marginRight: '1rem' }}>History</Link>
       <Link to="/account" style={{ marginRight: '1rem' }}>Account</Link>
+      <Link to="/questions" style={{ marginRight: '1rem' }}>Questions</Link>
       <Link to="/login" style={{ marginRight: '1rem' }}>Login</Link>
     </nav>
   )
 }
-
