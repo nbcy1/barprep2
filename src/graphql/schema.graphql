@@ -8,6 +8,7 @@ type User @model @auth(rules: [{ allow: owner }]) {
 type Question @model {
   id: ID!
   category: String!
+  subcategory: String
   text: String!
   options: [String!]!
   correctIndex: Int
