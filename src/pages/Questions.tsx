@@ -1,33 +1,27 @@
-// src/pages/Questions.tsx
-import React, { useEffect, useState } from 'react'
-import { API } from 'aws-amplify'
+import { useEffect, useState } from 'react'
+import * as API_Module from '@aws-amplify/api'
 import { listQuestions } from '../graphql/queries'
+
+const API = API_Module.API
 
 type Question = {
   id: string
-  category?: string
+  category: string
   text: string
   options: string[]
   correctIndex: number
+  explanation?: string
 }
 
 export default function Questions() {
   const [questions, setQuestions] = useState<Question[]>([])
   const [loading, setLoading] = useState(true)
-  const [answers, setAnswers] = useState<{ [id: string]: number | null }>({})
 
   useEffect(() => {
     ;(async () => {
       try {
         const res: any = await API.graphql({ query: listQuestions })
-        const items = res?.data?.listQuestions?.items ?? []
-        setQuestions(items)
-        // initialize answers
-        const initAnswers: { [id: string]: number | null } = {}
-        items.forEach((q: Question) => {
-          initAnswers[q.id] = null
-        })
-        setAnswers(initAnswers)
+        setQuestions(res?.data?.listQuestions?.items || [])
       } catch (err) {
         console.error('Failed to load questions', err)
       } finally {
@@ -36,45 +30,19 @@ export default function Questions() {
     })()
   }, [])
 
-  const handleAnswer = (qid: string, choice: number) => {
-    setAnswers({ ...answers, [qid]: choice })
-  }
-
   if (loading) return <div className="page">Loading questions…</div>
 
   return (
     <div className="page">
-      <h2>Practice Questions</h2>
-      {questions.length === 0 && <p>No questions available.</p>}
+      <h2>Questions</h2>
       <ul>
         {questions.map((q) => (
-          <li key={q.id} style={{ marginBottom: '1rem' }}>
-            <strong>{q.category ?? 'Uncategorized'}:</strong> {q.text}
-            <ul>
-              {q.options.map((opt, idx) => (
-                <li key={idx}>
-                  <label>
-                    <input
-                      type="radio"
-                      name={q.id}
-                      checked={answers[q.id] === idx}
-                      onChange={() => handleAnswer(q.id, idx)}
-                    />
-                    {opt}
-                  </label>
-                </li>
-              ))}
-            </ul>
-            {answers[q.id] !== null && (
-              <p>
-                {answers[q.id] === q.correctIndex
-                  ? '✅ Correct!'
-                  : `❌ Incorrect. Correct answer: ${q.options[q.correctIndex]}`}
-              </p>
-            )}
+          <li key={q.id}>
+            <strong>{q.category}</strong>: {q.text}
           </li>
         ))}
       </ul>
     </div>
   )
 }
+
