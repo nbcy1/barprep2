@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react'
-import * as APIModule from '@aws-amplify/api'  // <- import as module
-const API = APIModule.API
-
+import * as API_Module from '@aws-amplify/api'
 import * as AuthModule from '@aws-amplify/auth'
-const Auth = AuthModule.Auth
-
 import { listAnswerAttempts } from '../graphql/queries'
+
+const API = API_Module.API
+const Auth = AuthModule.Auth
 
 type Attempt = {
   id: string
@@ -25,12 +24,10 @@ export default function History() {
       try {
         const user = await Auth.currentAuthenticatedUser()
         const userId = user?.attributes?.sub ?? user?.username
-
         const res: any = await API.graphql({
           query: listAnswerAttempts,
           variables: { filter: { userID: { eq: userId } } }
         })
-
         setAttempts(res?.data?.listAnswerAttempts?.items || [])
       } catch (err) {
         console.error('Failed to load history', err)
@@ -60,4 +57,3 @@ export default function History() {
     </div>
   )
 }
-
