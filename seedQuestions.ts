@@ -1,7 +1,8 @@
-// TypeScript + ESM JSON import
 import { generateClient } from "aws-amplify/data";
 import type { Schema } from "./amplify/data/resource";
-import questions from "./questions.json" assert { type: "json" }; // <-- add this
+import fs from "fs";
+
+const questions = JSON.parse(fs.readFileSync("./questions.json", "utf-8"));
 
 async function seed() {
   const client = generateClient<Schema>();
