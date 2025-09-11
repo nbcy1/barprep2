@@ -1,8 +1,6 @@
-// src/seedQuestions.ts
 import { Amplify } from 'aws-amplify'
-import amplifyConfig from './amplify_outputs.json'
-
-import { generateClient } from '@aws-amplify/data'
+import amplifyConfig from './amplify_outputs.json'  // <-- your generated config
+import { generateClient } from '@aws-amplify/backend/data' // local Gen 2 package
 import type { Schema } from './amplify/data/resource'
 
 Amplify.configure(amplifyConfig)
