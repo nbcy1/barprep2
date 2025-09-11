@@ -4,7 +4,7 @@ import type { Schema } from "./amplify/data/resource";
 import fs from "fs";
 
 // Import your Gen 2 backend outputs
-import amplifyConfig from "./amplify/amplify_outputs.json";
+import amplifyConfig from "./src/amplify_outputs.json";
 
 // Tell Amplify about your backend
 Amplify.configure(amplifyConfig);
