@@ -4,7 +4,7 @@ const schema = a.schema({
   Question: a
     .model({
       question: a.string(),
-      choices: a.string(), // JSON string of multiple-choice options
+      choices: a.json(), // store as JSON array
       answer: a.string(),
       topic: a.string(),
     })
