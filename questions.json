@@ -1,0 +1,14 @@
+[
+  {
+    "content": "What is the bar exam passing score?",
+    "topic": "Bar Basics",
+    "answer": "266",
+    "choices": "260,266,270,280"
+  },
+  {
+    "content": "Which court is the highest in the U.S.?",
+    "topic": "Court Structure",
+    "answer": "Supreme Court",
+    "choices": "District Court,Appeals Court,Supreme Court"
+  }
+]
