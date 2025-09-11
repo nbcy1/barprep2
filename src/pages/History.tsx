@@ -1,57 +1,44 @@
-import { useEffect, useState } from 'react'
-import * as API_Module from '@aws-amplify/api'
-import * as AuthModule from '@aws-amplify/auth'
-import { listAnswerAttempts } from '../graphql/queries'
+"use client"
 
-const API = API_Module.API
-const Auth = AuthModule.Auth
+import React, { useEffect, useState } from "react"
+import { generateClient } from "aws-amplify/data"
+import type { Schema } from "../amplify/data/resource"
 
-type Attempt = {
+const client = generateClient<Schema>()
+
+interface Todo {
   id: string
-  questionID: string
-  category?: string
-  selectedIndex: number
-  isCorrect?: boolean | null
-  createdAt: string
+  content: string
 }
 
 export default function History() {
-  const [attempts, setAttempts] = useState<Attempt[]>([])
+  const [todos, setTodos] = useState<Todo[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    ;(async () => {
+    const fetchTodos = async () => {
       try {
-        const user = await Auth.currentAuthenticatedUser()
-        const userId = user?.attributes?.sub ?? user?.username
-        const res: any = await API.graphql({
-          query: listAnswerAttempts,
-          variables: { filter: { userID: { eq: userId } } }
-        })
-        setAttempts(res?.data?.listAnswerAttempts?.items || [])
-      } catch (err) {
-        console.error('Failed to load history', err)
+        const response = await client.models.Todo.list()
+        setTodos(response)
+      } catch (error) {
+        console.error("Error fetching todos:", error)
       } finally {
         setLoading(false)
       }
-    })()
+    }
+
+    fetchTodos()
   }, [])
 
-  if (loading) return <div className="page">Loading history…</div>
+  if (loading) return <p>Loading...</p>
+  if (!todos.length) return <p>No items found.</p>
 
   return (
-    <div className="page">
-      <h2>Your Answer History</h2>
-      {attempts.length === 0 && <p className="muted">No attempts recorded yet.</p>}
-      <ul className="card">
-        {attempts.map((a) => (
-          <li key={a.id} style={{ marginBottom: 8 }}>
-            <div>
-              <strong>{a.category ?? 'Unknown Category'}</strong> —{' '}
-              {a.isCorrect ? '✅ Correct' : '❌ Incorrect'}
-            </div>
-            <small className="muted">{new Date(a.createdAt).toLocaleString()}</small>
-          </li>
+    <div>
+      <h1>History</h1>
+      <ul>
+        {todos.map((todo) => (
+          <li key={todo.id}>{todo.content}</li>
         ))}
       </ul>
     </div>
