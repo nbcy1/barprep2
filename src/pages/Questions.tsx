@@ -1,48 +1,41 @@
-import { useEffect, useState } from 'react'
-import * as API_Module from '@aws-amplify/api'
-import { listQuestions } from '../graphql/queries'
+import React, { useEffect, useState } from "react"
+import { generateClient } from "aws-amplify/data"
+import type { Schema } from "../amplify/data/resource"
 
-const API = API_Module.API
-
-type Question = {
+interface Question {
   id: string
-  category: string
-  text: string
-  options: string[]
-  correctIndex: number
-  explanation?: string
+  content: string
+  topic?: string
 }
 
-export default function Questions() {
+const Questions: React.FC = () => {
   const [questions, setQuestions] = useState<Question[]>([])
-  const [loading, setLoading] = useState(true)
+  const client = generateClient<Schema>()
 
   useEffect(() => {
-    ;(async () => {
+    const fetchQuestions = async () => {
       try {
-        const res: any = await API.graphql({ query: listQuestions })
-        setQuestions(res?.data?.listQuestions?.items || [])
+        const result = await client.models.Question.list()
+        setQuestions(result)
       } catch (err) {
-        console.error('Failed to load questions', err)
-      } finally {
-        setLoading(false)
+        console.error("Error fetching questions:", err)
       }
-    })()
+    }
+
+    fetchQuestions()
   }, [])
 
-  if (loading) return <div className="page">Loading questions…</div>
-
   return (
-    <div className="page">
-      <h2>Questions</h2>
+    <div>
+      <h1>Questions</h1>
       <ul>
-        {questions.map((q) => (
-          <li key={q.id}>
-            <strong>{q.category}</strong>: {q.text}
-          </li>
+        {questions.map(q => (
+          <li key={q.id}>{q.content}</li>
         ))}
       </ul>
     </div>
   )
 }
+
+export default Questions
 
