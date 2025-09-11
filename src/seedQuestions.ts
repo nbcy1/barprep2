@@ -1,5 +1,5 @@
-import { generateClient } from './amplify/data/resource' // <- local file
-import type { Schema } from './amplify/data/resource'
+import { generateClient } from './amplify/data/resource.ts' // <- local file
+import type { Schema } from './amplify/data/resource.ts'
 
 // Import your Amplify outputs
 import amplifyConfig from './amplify_outputs.json'
