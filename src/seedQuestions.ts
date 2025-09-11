@@ -1,34 +1,34 @@
 // src/seedQuestions.ts
-import { Amplify } from 'aws-amplify';
-import amplifyConfig from './amplify_outputs.json'; // path to your amplify_outputs.json
-import { generateClient } from '@aws-amplify/data';
-import type { Schema } from './amplify/data/resource';
+import { Amplify } from 'aws-amplify'
+import amplifyConfig from './aws-exports' // adjust if your aws-exports is elsewhere
 
-Amplify.configure(amplifyConfig);
+import { generateClient } from 'aws-amplify/data'
+import type { Schema } from './amplify/data/resource'
 
-const client = generateClient<Schema>();
+// Configure Amplify
+Amplify.configure(amplifyConfig)
 
-// Example questions to seed
+// Generate Data client
+const client = generateClient<Schema>()
+
+// Questions to seed
 const questions = [
-  { content: "What is the bar exam passing score?" },
-  { content: "Which court is the highest in the U.S.?" },
-  { content: "How many hours of study are recommended per day?" },
-  { content: "What subjects are covered on the bar exam?" },
-  { content: "When are bar exam results released?" },
-];
+  { content: 'What is the bar exam passing score?' },
+  { content: 'Which court is the highest in the U.S.?' },
+  { content: 'How many U.S. Supreme Court justices are there?' },
+  { content: 'What is the statute of limitations for contracts in your state?' }
+]
 
 async function seed() {
   for (const q of questions) {
     try {
-      await client.models.Todo.create({
-        content: q.content,
-      });
-      console.log('Added question:', q.content);
+      await client.models.Todo.create(q)
+      console.log('Added question:', q.content)
     } catch (err) {
-      console.error('Error adding question:', q.content, 'Error:', err);
+      console.error('Error adding question:', q.content, 'Error:', err)
     }
   }
-  console.log('Seeding complete!');
+  console.log('Seeding complete!')
 }
 
-seed();
+seed()
