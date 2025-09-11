@@ -1,4 +1,3 @@
-// src/aws-exports.ts
-import amplifyConfig from '../amplify/amplify_outputs.json'
+import amplifyConfig from './amplify_outputs.json'
 
 export default amplifyConfig
