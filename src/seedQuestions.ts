@@ -1,17 +1,14 @@
 // src/seedQuestions.ts
 import { Amplify } from 'aws-amplify'
-import amplifyConfig from './aws-exports' // adjust if your aws-exports is elsewhere
+import amplifyConfig from './amplify_outputs.json'
 
-import { generateClient } from 'aws-amplify/data'
+import { generateClient } from '@aws-amplify/data'
 import type { Schema } from './amplify/data/resource'
 
-// Configure Amplify
 Amplify.configure(amplifyConfig)
 
-// Generate Data client
 const client = generateClient<Schema>()
 
-// Questions to seed
 const questions = [
   { content: 'What is the bar exam passing score?' },
   { content: 'Which court is the highest in the U.S.?' },
@@ -32,3 +29,4 @@ async function seed() {
 }
 
 seed()
+
