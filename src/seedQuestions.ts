@@ -1,7 +1,9 @@
-import { Amplify } from 'aws-amplify'
-import amplifyConfig from './amplify_outputs.json'  // <-- your generated config
-import { generateClient } from '@aws-amplify/backend/data' // local Gen 2 package
+import { generateClient } from './amplify/data/resource' // <- local file
 import type { Schema } from './amplify/data/resource'
+
+// Import your Amplify outputs
+import amplifyConfig from './amplify_outputs.json'
+import { Amplify } from 'aws-amplify'
 
 Amplify.configure(amplifyConfig)
 
@@ -20,7 +22,7 @@ async function seed() {
       await client.models.Todo.create(q)
       console.log('Added question:', q.content)
     } catch (err) {
-      console.error('Error adding question:', q.content, 'Error:', err)
+      console.error('Error adding question:', q.content, err)
     }
   }
   console.log('Seeding complete!')
