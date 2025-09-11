@@ -5,8 +5,7 @@ import './index.css'
 
 // Amplify setup
 import { Amplify } from 'aws-amplify'
-// Import the Gen 2 JSON outputs directly
-import amplifyConfig from '../amplify/amplify_outputs.json'
+import amplifyConfig from './aws-exports'  // <- import from src folder
 
 Amplify.configure(amplifyConfig)
 
