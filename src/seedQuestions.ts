@@ -1,6 +1,6 @@
 // src/seedQuestions.ts
 import { Amplify } from 'aws-amplify';
-import amplifyConfig from '../amplify/amplify_outputs.json'; // relative to src/
+import amplifyConfig from './amplify_outputs.json'; // relative to src/
 import { generateClient } from '@aws-amplify/data';
 import type { Schema } from '../amplify/data/resource'; // relative path to resource.ts
 import questionsData from './questions.json'; // your questions JSON file
