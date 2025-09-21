@@ -1,7 +1,7 @@
 // src/pages/AdminQuestions.tsx
 import { useEffect, useState } from 'react';
 import { DataStore } from 'aws-amplify';
-import { Question } from '../amplify/models';
+import { Question } from '../models'; // updated import
 
 export default function AdminQuestions() {
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -93,4 +93,3 @@ export default function AdminQuestions() {
     </div>
   );
 }
-
