@@ -1,7 +1,7 @@
 // src/pages/Questions.tsx
 import { useEffect, useState } from 'react';
 import { DataStore } from 'aws-amplify';
-import { Question } from '../amplify/models';
+import { Question } from '../models'; // updated import
 
 export default function Questions() {
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -22,7 +22,7 @@ export default function Questions() {
   const handleSubmit = () => {
     console.log('User answers:', answers);
     alert('Answers submitted!');
-    // Later, we can save these to backend if needed
+    // Later, you can save these to backend if needed
   };
 
   return (
@@ -49,4 +49,3 @@ export default function Questions() {
     </div>
   );
 }
-
