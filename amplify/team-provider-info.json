@@ -1,0 +1,20 @@
+{
+  "dev": {
+    "awscloudformation": {
+      "AuthRoleName": "amplify-barprep2-dev-79a2f-authRole",
+      "UnauthRoleArn": "arn:aws:iam::654654319093:role/amplify-barprep2-dev-79a2f-unauthRole",
+      "AuthRoleArn": "arn:aws:iam::654654319093:role/amplify-barprep2-dev-79a2f-authRole",
+      "Region": "us-east-2",
+      "DeploymentBucketName": "amplify-barprep2-dev-79a2f-deployment",
+      "UnauthRoleName": "amplify-barprep2-dev-79a2f-unauthRole",
+      "StackName": "amplify-barprep2-dev-79a2f",
+      "StackId": "arn:aws:cloudformation:us-east-2:654654319093:stack/amplify-barprep2-dev-79a2f/5d9b81c0-9722-11f0-abd1-06f4671be32d",
+      "AmplifyAppId": "d2jeifes5tvupr"
+    },
+    "categories": {
+      "api": {
+        "barprep2": {}
+      }
+    }
+  }
+}

@@ -27,6 +27,7 @@
     "aws-cdk-lib": "^2.204.0",
     "constructs": "^10.4.2",
     "esbuild": "^0.25.9",
+    "ts-node": "^10.9.2",
     "tsx": "^4.20.5",
     "typescript": "^5.9.2",
     "vite": "^5.2.0"
