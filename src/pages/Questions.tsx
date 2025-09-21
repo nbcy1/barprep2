@@ -1,63 +1,52 @@
-import { useEffect, useState } from "react";
-import { generateClient } from "@aws-amplify/data";
-import type { Schema } from "../../amplify/data/resource";
-
-const client = generateClient<Schema>();
+// src/pages/Questions.tsx
+import { useEffect, useState } from 'react';
+import { DataStore } from 'aws-amplify';
+import { Question } from '../amplify/models';
 
 export default function Questions() {
-  const [questions, setQuestions] = useState<Schema["Question"]["type"][]>([]);
-  const [selected, setSelected] = useState<{ [id: string]: string }>({});
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [answers, setAnswers] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    async function fetchQuestions() {
-      try {
-        const result = await client.models.Question.list();
-        setQuestions(result.data);
-      } catch (err) {
-        console.error("Error fetching questions:", err);
-      }
-    }
+    const fetchQuestions = async () => {
+      const qs = await DataStore.query(Question);
+      setQuestions(qs);
+    };
     fetchQuestions();
   }, []);
 
-  async function handleAnswer(questionId: string, choice: string) {
-    try {
-      await client.models.Answer.create({
-        questionId,
-        userId: "CURRENT_USER_ID", // later replace with Amplify Auth
-        choice,
-      });
-      setSelected((prev) => ({ ...prev, [questionId]: choice }));
-    } catch (err) {
-      console.error("Error saving answer:", err);
-    }
-  }
+  const handleChange = (questionId: string, value: string) => {
+    setAnswers(prev => ({ ...prev, [questionId]: value }));
+  };
+
+  const handleSubmit = () => {
+    console.log('User answers:', answers);
+    alert('Answers submitted!');
+    // Later, we can save these to backend if needed
+  };
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Practice Questions</h1>
-      {questions.map((q) => {
-        const choices = JSON.parse(q.choices || "[]");
-        return (
-          <div key={q.id} className="mb-6 border p-4 rounded">
-            <h2 className="font-semibold mb-2">{q.question}</h2>
-            <ul>
-              {choices.map((c: string, idx: number) => (
-                <li key={idx}>
-                  <button
-                    onClick={() => handleAnswer(q.id, c)}
-                    className={`px-3 py-1 border rounded mb-1 block w-full text-left ${
-                      selected[q.id] === c ? "bg-blue-200" : ""
-                    }`}
-                  >
-                    {c}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-        );
-      })}
+    <div style={{ padding: '1rem' }}>
+      <h1>Questions</h1>
+      {questions.map(q => (
+        <div key={q.id} style={{ marginBottom: '1.5rem' }}>
+          <p>{q.question}</p>
+          {JSON.parse(q.choices).map((choice: string) => (
+            <label key={choice} style={{ display: 'block' }}>
+              <input
+                type="radio"
+                name={q.id}
+                value={choice}
+                checked={answers[q.id] === choice}
+                onChange={e => handleChange(q.id, e.target.value)}
+              />
+              {choice}
+            </label>
+          ))}
+        </div>
+      ))}
+      <button onClick={handleSubmit}>Submit Answers</button>
     </div>
   );
 }
+
