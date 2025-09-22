@@ -1,33 +1,8 @@
-type Question @model
-  @auth(rules: [
-    # Admin users can do everything
-    { allow: groups, groups: ["Admins"], operations: [create, update, delete, read] }
-    # Public (unauthenticated) users can only read questions
-    { allow: public, operations: [read] }
-    # If you want authenticated users to submit answers, consider a separate type
-  ]) {
+type Question @model @auth(rules: [{ allow: public }]) {
   id: ID!
   title: String!
-  body: String!  # Made required since questions should have content
-  answer: String  # Keep optional for security (don't expose answers publicly)
-  category: String  # Consider adding for better organization
-  difficulty: String  # Consider adding (Easy, Medium, Hard)
-  explanation: String  # Consider adding explanation for correct answer
-  createdAt: AWSDateTime!
-  updatedAt: AWSDateTime!
+  body: String
+  answer: String
+  createdAt: AWSDateTime
+  updatedAt: AWSDateTime
 }
-
-# Consider adding a separate type for user responses/submissions
-type UserResponse @model
-  @auth(rules: [
-    { allow: owner }  # Users can only see their own responses
-    { allow: groups, groups: ["Admins"], operations: [create, update, delete, read] }
-  ]) {
-  id: ID!
-  questionId: ID! @index(name: "byQuestion")
-  userAnswer: String!
-  isCorrect: Boolean
-  submittedAt: AWSDateTime!
-  owner: String @auth(rules: [{ allow: owner, operations: [read, delete] }])
-}
-# 5. Consider separating answers from questions for security
