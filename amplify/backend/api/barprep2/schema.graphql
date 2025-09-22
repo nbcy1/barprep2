@@ -1,7 +1,11 @@
-type Question @model {
+type Question @model
+  @auth(rules: [
+    { allow: public, operations: [read] },      # anyone can read
+    { allow: owner, operations: [create, update, delete] } # only creator can modify
+  ]) {
   id: ID!
-  question: String!
-  choices: [String!]!
-  answer: String!
-  topic: String
+  text: String!
+  answer: String
+  createdAt: AWSDateTime
+  updatedAt: AWSDateTime
 }
