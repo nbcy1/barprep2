@@ -1,11 +1,11 @@
 type Question @model
   @auth(rules: [
-    { allow: public, operations: [read] },      # anyone can read
-    { allow: private, operations: [create, update, delete] } # only creator can modify
+    { allow: groups, groups: ["Admins"], operations: [create, update, delete] }, # Admins manage questions
+    { allow: private, operations: [read] } # Authenticated users can read
   ]) {
   id: ID!
-  text: String!
-  answer: String
+  text: String!               # The question text
+  answer: String              # Optional admin-provided answer
   createdAt: AWSDateTime
   updatedAt: AWSDateTime
 }
