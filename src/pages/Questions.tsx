@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react';
 import { API } from 'aws-amplify';
 import { listQuestions } from '../graphql/queries';
 
-// Define the Question type based on your schema
 type Question = {
   id: string;
   question: string;
@@ -28,7 +27,6 @@ export default function Questions() {
           query: listQuestions
         });
         
-        // Type assertion for the API response
         const questionsData = (result as any).data.listQuestions.items;
         setQuestions(questionsData);
         setError(null);
@@ -50,7 +48,6 @@ export default function Questions() {
   const handleSubmit = () => {
     console.log('User answers:', answers);
     alert('Answers submitted!');
-    // Later, you can save these to backend if needed
   };
 
   if (loading) {
