@@ -1,14 +1,13 @@
 // src/pages/Questions.tsx
 import { useEffect, useState } from 'react';
-import { API, graphqlOperation } from 'aws-amplify/api';
+import { API } from 'aws-amplify/api';
 import { listQuestions } from '../graphql/queries';
 
 type Question = {
   id: string;
-  question: string;
-  choices: string[];
-  answer: string;
-  topic?: string;
+  title: string;
+  body?: string;
+  answer?: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -23,8 +22,12 @@ export default function Questions() {
     const fetchQuestions = async () => {
       try {
         setLoading(true);
-        const result = await API.graphql(graphqlOperation(listQuestions));
-        const questionsData = (result as any).data.listQuestions.items;
+        // Amplify v6 syntax
+        const result: any = await API.graphql({
+          query: listQuestions,
+        });
+
+        const questionsData = result.data.listQuestions.items;
         setQuestions(questionsData);
         setError(null);
       } catch (err) {
@@ -62,42 +65,25 @@ export default function Questions() {
         <p>No questions available yet.</p>
       ) : (
         questions.map(q => (
-          <div
-            key={q.id}
-            style={{
-              marginBottom: '1.5rem',
-              border: '1px solid #ccc',
-              padding: '1rem',
-            }}
-          >
-            <h3>{q.question}</h3>
-            {q.topic && <small style={{ color: '#666' }}>Topic: {q.topic}</small>}
+          <div key={q.id} style={{ marginBottom: '1.5rem', border: '1px solid #ccc', padding: '1rem' }}>
+            <h3>{q.title}</h3>
+            {q.body && <p>{q.body}</p>}
             <div style={{ marginTop: '0.5rem' }}>
-              {q.choices.map(choice => (
-                <label
-                  key={choice}
-                  style={{ display: 'block', margin: '0.25rem 0' }}
-                >
-                  <input
-                    type="radio"
-                    name={q.id}
-                    value={choice}
-                    checked={answers[q.id] === choice}
-                    onChange={e => handleChange(q.id, e.target.value)}
-                    style={{ marginRight: '0.5rem' }}
-                  />
-                  {choice}
-                </label>
-              ))}
+              <label style={{ display: 'block', margin: '0.25rem 0' }}>
+                <input
+                  type="text"
+                  placeholder="Your answer..."
+                  value={answers[q.id] || ''}
+                  onChange={e => handleChange(q.id, e.target.value)}
+                  style={{ marginRight: '0.5rem' }}
+                />
+              </label>
             </div>
           </div>
         ))
       )}
       {questions.length > 0 && (
-        <button
-          onClick={handleSubmit}
-          style={{ padding: '0.5rem 1rem', fontSize: '1rem' }}
-        >
+        <button onClick={handleSubmit} style={{ padding: '0.5rem 1rem', fontSize: '1rem' }}>
           Submit Answers
         </button>
       )}
