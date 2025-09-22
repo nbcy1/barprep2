@@ -1,6 +1,6 @@
 // src/pages/Questions.tsx
 import { useEffect, useState } from 'react';
-import { API } from 'aws-amplify';
+import { API, graphqlOperation } from 'aws-amplify/api';
 import { listQuestions } from '../graphql/queries';
 
 type Question = {
@@ -23,10 +23,7 @@ export default function Questions() {
     const fetchQuestions = async () => {
       try {
         setLoading(true);
-        const result = await API.graphql({
-          query: listQuestions
-        });
-        
+        const result = await API.graphql(graphqlOperation(listQuestions));
         const questionsData = (result as any).data.listQuestions.items;
         setQuestions(questionsData);
         setError(null);
@@ -65,12 +62,22 @@ export default function Questions() {
         <p>No questions available yet.</p>
       ) : (
         questions.map(q => (
-          <div key={q.id} style={{ marginBottom: '1.5rem', border: '1px solid #ccc', padding: '1rem' }}>
+          <div
+            key={q.id}
+            style={{
+              marginBottom: '1.5rem',
+              border: '1px solid #ccc',
+              padding: '1rem',
+            }}
+          >
             <h3>{q.question}</h3>
             {q.topic && <small style={{ color: '#666' }}>Topic: {q.topic}</small>}
             <div style={{ marginTop: '0.5rem' }}>
-              {q.choices.map((choice: string) => (
-                <label key={choice} style={{ display: 'block', margin: '0.25rem 0' }}>
+              {q.choices.map(choice => (
+                <label
+                  key={choice}
+                  style={{ display: 'block', margin: '0.25rem 0' }}
+                >
                   <input
                     type="radio"
                     name={q.id}
@@ -87,7 +94,10 @@ export default function Questions() {
         ))
       )}
       {questions.length > 0 && (
-        <button onClick={handleSubmit} style={{ padding: '0.5rem 1rem', fontSize: '1rem' }}>
+        <button
+          onClick={handleSubmit}
+          style={{ padding: '0.5rem 1rem', fontSize: '1rem' }}
+        >
           Submit Answers
         </button>
       )}
