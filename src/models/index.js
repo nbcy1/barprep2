@@ -2,10 +2,8 @@
 import { initSchema } from '@aws-amplify/datastore';
 import { schema } from './schema';
 
-
-
-const { Todo } = initSchema(schema);
+const { Question } = initSchema(schema);
 
 export {
-  Todo
+  Question
 };
