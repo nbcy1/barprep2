@@ -22,7 +22,6 @@ export default function Questions() {
     const fetchQuestions = async () => {
       try {
         setLoading(true);
-        // Amplify v6 syntax
         const result: any = await API.graphql({
           query: listQuestions,
         });
@@ -68,17 +67,13 @@ export default function Questions() {
           <div key={q.id} style={{ marginBottom: '1.5rem', border: '1px solid #ccc', padding: '1rem' }}>
             <h3>{q.title}</h3>
             {q.body && <p>{q.body}</p>}
-            <div style={{ marginTop: '0.5rem' }}>
-              <label style={{ display: 'block', margin: '0.25rem 0' }}>
-                <input
-                  type="text"
-                  placeholder="Your answer..."
-                  value={answers[q.id] || ''}
-                  onChange={e => handleChange(q.id, e.target.value)}
-                  style={{ marginRight: '0.5rem' }}
-                />
-              </label>
-            </div>
+            <input
+              type="text"
+              placeholder="Your answer..."
+              value={answers[q.id] || ''}
+              onChange={e => handleChange(q.id, e.target.value)}
+              style={{ marginTop: '0.5rem', width: '100%' }}
+            />
           </div>
         ))
       )}
