@@ -1,14 +1,11 @@
 import { useEffect, useState } from "react";
 import { generateClient } from "aws-amplify/api"; // ✅ new import
-import { listQuestions } from "../graphql/queries";
 
 type Question = {
   id: string;
-  title: string;
-  body?: string;
-  answer?: string;
-  createdAt: string;
-  updatedAt: string;
+  question: string;
+  choices: string[];
+  topic?: string;
 };
 
 const client = generateClient();
@@ -25,7 +22,18 @@ export default function Questions() {
         setLoading(true);
 
         const result = await client.graphql({
-          query: listQuestions,
+          query: `
+            query ListQuestions {
+              listQuestions {
+                items {
+                  id
+                  question
+                  choices
+                  topic
+                }
+              }
+            }
+          `,
         });
 
         setQuestions(result.data.listQuestions.items);
@@ -64,8 +72,9 @@ export default function Questions() {
             key={q.id}
             style={{ marginBottom: "1.5rem", border: "1px solid #ccc", padding: "1rem" }}
           >
-            <h3>{q.title}</h3>
-            {q.body && <p>{q.body}</p>}
+            <h3>{q.question}</h3>
+            {q.choices && <p>Choices: {q.choices.join(", ")}</p>}
+            {q.topic && <p>Topic: {q.topic}</p>}
             <input
               type="text"
               placeholder="Your answer..."
@@ -87,4 +96,3 @@ export default function Questions() {
     </div>
   );
 }
-
