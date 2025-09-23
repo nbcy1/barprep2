@@ -8,7 +8,6 @@ export default function AdminQuestions() {
   const [newQuestion, setNewQuestion] = useState({
     question: '',
     choices: '',
-    answer: '',
     topic: ''
   });
 
@@ -23,7 +22,6 @@ export default function AdminQuestions() {
                 id
                 question
                 choices
-                answer
                 topic
               }
             }
@@ -42,7 +40,7 @@ export default function AdminQuestions() {
 
   // Add new question
   const handleAdd = async () => {
-    if (!newQuestion.question || !newQuestion.choices || !newQuestion.answer) return;
+    if (!newQuestion.question || !newQuestion.choices || !newQuestion.topic) return;
 
     try {
       await client.graphql({
@@ -57,13 +55,12 @@ export default function AdminQuestions() {
           input: {
             question: newQuestion.question,
             choices: JSON.stringify(newQuestion.choices.split(',')),
-            answer: newQuestion.answer,
             topic: newQuestion.topic,
           },
         },
       });
 
-      setNewQuestion({ question: '', choices: '', answer: '', topic: '' });
+      setNewQuestion({ question: '', choices: '', topic: '' });
       fetchQuestions();
     } catch (err) {
       console.error('Error adding question:', err);
@@ -109,12 +106,6 @@ export default function AdminQuestions() {
       />
       <input
         type="text"
-        placeholder="Answer"
-        value={newQuestion.answer}
-        onChange={e => setNewQuestion({ ...newQuestion, answer: e.target.value })}
-      />
-      <input
-        type="text"
         placeholder="Topic"
         value={newQuestion.topic}
         onChange={e => setNewQuestion({ ...newQuestion, topic: e.target.value })}
@@ -126,7 +117,6 @@ export default function AdminQuestions() {
         <div key={q.id}>
           <p><strong>{q.question}</strong></p>
           <p>Choices: {JSON.parse(q.choices).join(', ')}</p>
-          <p>Answer: {q.answer}</p>
           <p>Topic: {q.topic}</p>
           <button onClick={() => handleDelete(q.id)} style={{ color: 'red' }}>
             Delete
