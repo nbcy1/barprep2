@@ -1,12 +1,13 @@
 type Question @model
   @auth(rules: [
-    { allow: public, operations: [read, create] },    # Public users
-    { allow: owner, ownerField: "admin", operations: [create, update, delete, read] }  # Admin users
+    { allow: public, operations: [read, create] },
+    { allow: owner, ownerField: "admin", operations: [create, update, delete, read] }
   ]) {
   id: ID!
-  title: String!
-  body: String
+  question: String!        # renamed from title
+  choices: String          # can store comma-separated values
   answer: String
+  topic: String
   createdAt: AWSDateTime
   updatedAt: AWSDateTime
 }
