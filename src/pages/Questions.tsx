@@ -1,6 +1,6 @@
 // src/pages/Questions.tsx
 import { useEffect, useState } from 'react';
-import { API } from '@aws-amplify/api';
+import { API } from '@aws-amplify/api-graphql';
 import { GraphQLQuery } from '@aws-amplify/api-graphql';
 import { listQuestions } from '../graphql/queries';
 
