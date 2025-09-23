@@ -2,20 +2,24 @@
 /* eslint-disable */
 //  This file was automatically generated and should not be edited.
 
-export type CreateTodoInput = {
+export type CreateQuestionInput = {
   id?: string | null,
-  name: string,
-  description?: string | null,
+  title: string,
+  body?: string | null,
+  answer?: string | null,
+  createdAt?: string | null,
+  updatedAt?: string | null,
 };
 
-export type ModelTodoConditionInput = {
-  name?: ModelStringInput | null,
-  description?: ModelStringInput | null,
-  and?: Array< ModelTodoConditionInput | null > | null,
-  or?: Array< ModelTodoConditionInput | null > | null,
-  not?: ModelTodoConditionInput | null,
+export type ModelQuestionConditionInput = {
+  title?: ModelStringInput | null,
+  body?: ModelStringInput | null,
+  answer?: ModelStringInput | null,
   createdAt?: ModelStringInput | null,
   updatedAt?: ModelStringInput | null,
+  and?: Array< ModelQuestionConditionInput | null > | null,
+  or?: Array< ModelQuestionConditionInput | null > | null,
+  not?: ModelQuestionConditionInput | null,
 };
 
 export type ModelStringInput = {
@@ -58,34 +62,39 @@ export type ModelSizeInput = {
   between?: Array< number | null > | null,
 };
 
-export type Todo = {
-  __typename: "Todo",
+export type Question = {
+  __typename: "Question",
   id: string,
-  name: string,
-  description?: string | null,
-  createdAt: string,
-  updatedAt: string,
+  title: string,
+  body?: string | null,
+  answer?: string | null,
+  createdAt?: string | null,
+  updatedAt?: string | null,
 };
 
-export type UpdateTodoInput = {
+export type UpdateQuestionInput = {
   id: string,
-  name?: string | null,
-  description?: string | null,
+  title?: string | null,
+  body?: string | null,
+  answer?: string | null,
+  createdAt?: string | null,
+  updatedAt?: string | null,
 };
 
-export type DeleteTodoInput = {
+export type DeleteQuestionInput = {
   id: string,
 };
 
-export type ModelTodoFilterInput = {
+export type ModelQuestionFilterInput = {
   id?: ModelIDInput | null,
-  name?: ModelStringInput | null,
-  description?: ModelStringInput | null,
+  title?: ModelStringInput | null,
+  body?: ModelStringInput | null,
+  answer?: ModelStringInput | null,
   createdAt?: ModelStringInput | null,
   updatedAt?: ModelStringInput | null,
-  and?: Array< ModelTodoFilterInput | null > | null,
-  or?: Array< ModelTodoFilterInput | null > | null,
-  not?: ModelTodoFilterInput | null,
+  and?: Array< ModelQuestionFilterInput | null > | null,
+  or?: Array< ModelQuestionFilterInput | null > | null,
+  not?: ModelQuestionFilterInput | null,
 };
 
 export type ModelIDInput = {
@@ -104,20 +113,21 @@ export type ModelIDInput = {
   size?: ModelSizeInput | null,
 };
 
-export type ModelTodoConnection = {
-  __typename: "ModelTodoConnection",
-  items:  Array<Todo | null >,
+export type ModelQuestionConnection = {
+  __typename: "ModelQuestionConnection",
+  items:  Array<Question | null >,
   nextToken?: string | null,
 };
 
-export type ModelSubscriptionTodoFilterInput = {
+export type ModelSubscriptionQuestionFilterInput = {
   id?: ModelSubscriptionIDInput | null,
-  name?: ModelSubscriptionStringInput | null,
-  description?: ModelSubscriptionStringInput | null,
+  title?: ModelSubscriptionStringInput | null,
+  body?: ModelSubscriptionStringInput | null,
+  answer?: ModelSubscriptionStringInput | null,
   createdAt?: ModelSubscriptionStringInput | null,
   updatedAt?: ModelSubscriptionStringInput | null,
-  and?: Array< ModelSubscriptionTodoFilterInput | null > | null,
-  or?: Array< ModelSubscriptionTodoFilterInput | null > | null,
+  and?: Array< ModelSubscriptionQuestionFilterInput | null > | null,
+  or?: Array< ModelSubscriptionQuestionFilterInput | null > | null,
 };
 
 export type ModelSubscriptionIDInput = {
@@ -150,131 +160,139 @@ export type ModelSubscriptionStringInput = {
   notIn?: Array< string | null > | null,
 };
 
-export type CreateTodoMutationVariables = {
-  input: CreateTodoInput,
-  condition?: ModelTodoConditionInput | null,
+export type CreateQuestionMutationVariables = {
+  input: CreateQuestionInput,
+  condition?: ModelQuestionConditionInput | null,
 };
 
-export type CreateTodoMutation = {
-  createTodo?:  {
-    __typename: "Todo",
+export type CreateQuestionMutation = {
+  createQuestion?:  {
+    __typename: "Question",
     id: string,
-    name: string,
-    description?: string | null,
-    createdAt: string,
-    updatedAt: string,
+    title: string,
+    body?: string | null,
+    answer?: string | null,
+    createdAt?: string | null,
+    updatedAt?: string | null,
   } | null,
 };
 
-export type UpdateTodoMutationVariables = {
-  input: UpdateTodoInput,
-  condition?: ModelTodoConditionInput | null,
+export type UpdateQuestionMutationVariables = {
+  input: UpdateQuestionInput,
+  condition?: ModelQuestionConditionInput | null,
 };
 
-export type UpdateTodoMutation = {
-  updateTodo?:  {
-    __typename: "Todo",
+export type UpdateQuestionMutation = {
+  updateQuestion?:  {
+    __typename: "Question",
     id: string,
-    name: string,
-    description?: string | null,
-    createdAt: string,
-    updatedAt: string,
+    title: string,
+    body?: string | null,
+    answer?: string | null,
+    createdAt?: string | null,
+    updatedAt?: string | null,
   } | null,
 };
 
-export type DeleteTodoMutationVariables = {
-  input: DeleteTodoInput,
-  condition?: ModelTodoConditionInput | null,
+export type DeleteQuestionMutationVariables = {
+  input: DeleteQuestionInput,
+  condition?: ModelQuestionConditionInput | null,
 };
 
-export type DeleteTodoMutation = {
-  deleteTodo?:  {
-    __typename: "Todo",
+export type DeleteQuestionMutation = {
+  deleteQuestion?:  {
+    __typename: "Question",
     id: string,
-    name: string,
-    description?: string | null,
-    createdAt: string,
-    updatedAt: string,
+    title: string,
+    body?: string | null,
+    answer?: string | null,
+    createdAt?: string | null,
+    updatedAt?: string | null,
   } | null,
 };
 
-export type GetTodoQueryVariables = {
+export type GetQuestionQueryVariables = {
   id: string,
 };
 
-export type GetTodoQuery = {
-  getTodo?:  {
-    __typename: "Todo",
+export type GetQuestionQuery = {
+  getQuestion?:  {
+    __typename: "Question",
     id: string,
-    name: string,
-    description?: string | null,
-    createdAt: string,
-    updatedAt: string,
+    title: string,
+    body?: string | null,
+    answer?: string | null,
+    createdAt?: string | null,
+    updatedAt?: string | null,
   } | null,
 };
 
-export type ListTodosQueryVariables = {
-  filter?: ModelTodoFilterInput | null,
+export type ListQuestionsQueryVariables = {
+  filter?: ModelQuestionFilterInput | null,
   limit?: number | null,
   nextToken?: string | null,
 };
 
-export type ListTodosQuery = {
-  listTodos?:  {
-    __typename: "ModelTodoConnection",
+export type ListQuestionsQuery = {
+  listQuestions?:  {
+    __typename: "ModelQuestionConnection",
     items:  Array< {
-      __typename: "Todo",
+      __typename: "Question",
       id: string,
-      name: string,
-      description?: string | null,
-      createdAt: string,
-      updatedAt: string,
+      title: string,
+      body?: string | null,
+      answer?: string | null,
+      createdAt?: string | null,
+      updatedAt?: string | null,
     } | null >,
     nextToken?: string | null,
   } | null,
 };
 
-export type OnCreateTodoSubscriptionVariables = {
-  filter?: ModelSubscriptionTodoFilterInput | null,
+export type OnCreateQuestionSubscriptionVariables = {
+  filter?: ModelSubscriptionQuestionFilterInput | null,
 };
 
-export type OnCreateTodoSubscription = {
-  onCreateTodo?:  {
-    __typename: "Todo",
+export type OnCreateQuestionSubscription = {
+  onCreateQuestion?:  {
+    __typename: "Question",
     id: string,
-    name: string,
-    description?: string | null,
-    createdAt: string,
-    updatedAt: string,
+    title: string,
+    body?: string | null,
+    answer?: string | null,
+    createdAt?: string | null,
+    updatedAt?: string | null,
   } | null,
 };
 
-export type OnUpdateTodoSubscriptionVariables = {
-  filter?: ModelSubscriptionTodoFilterInput | null,
+export type OnUpdateQuestionSubscriptionVariables = {
+  filter?: ModelSubscriptionQuestionFilterInput | null,
 };
 
-export type OnUpdateTodoSubscription = {
-  onUpdateTodo?:  {
-    __typename: "Todo",
+export type OnUpdateQuestionSubscription = {
+  onUpdateQuestion?:  {
+    __typename: "Question",
     id: string,
-    name: string,
-    description?: string | null,
-    createdAt: string,
-    updatedAt: string,
+    title: string,
+    body?: string | null,
+    answer?: string | null,
+    createdAt?: string | null,
+    updatedAt?: string | null,
   } | null,
 };
 
-export type OnDeleteTodoSubscriptionVariables = {
-  filter?: ModelSubscriptionTodoFilterInput | null,
+export type OnDeleteQuestionSubscriptionVariables = {
+  filter?: ModelSubscriptionQuestionFilterInput | null,
 };
 
-export type OnDeleteTodoSubscription = {
-  onDeleteTodo?:  {
-    __typename: "Todo",
+export type OnDeleteQuestionSubscription = {
+  onDeleteQuestion?:  {
+    __typename: "Question",
     id: string,
-    name: string,
-    description?: string | null,
-    createdAt: string,
-    updatedAt: string,
+    title: string,
+    body?: string | null,
+    answer?: string | null,
+    createdAt?: string | null,
+    updatedAt?: string | null,
   } | null,
 };

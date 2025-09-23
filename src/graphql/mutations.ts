@@ -8,54 +8,57 @@ type GeneratedMutation<InputType, OutputType> = string & {
   __generatedMutationOutput: OutputType;
 };
 
-export const createTodo = /* GraphQL */ `mutation CreateTodo(
-  $input: CreateTodoInput!
-  $condition: ModelTodoConditionInput
+export const createQuestion = /* GraphQL */ `mutation CreateQuestion(
+  $input: CreateQuestionInput!
+  $condition: ModelQuestionConditionInput
 ) {
-  createTodo(input: $input, condition: $condition) {
+  createQuestion(input: $input, condition: $condition) {
     id
-    name
-    description
+    title
+    body
+    answer
     createdAt
     updatedAt
     __typename
   }
 }
 ` as GeneratedMutation<
-  APITypes.CreateTodoMutationVariables,
-  APITypes.CreateTodoMutation
+  APITypes.CreateQuestionMutationVariables,
+  APITypes.CreateQuestionMutation
 >;
-export const updateTodo = /* GraphQL */ `mutation UpdateTodo(
-  $input: UpdateTodoInput!
-  $condition: ModelTodoConditionInput
+export const updateQuestion = /* GraphQL */ `mutation UpdateQuestion(
+  $input: UpdateQuestionInput!
+  $condition: ModelQuestionConditionInput
 ) {
-  updateTodo(input: $input, condition: $condition) {
+  updateQuestion(input: $input, condition: $condition) {
     id
-    name
-    description
+    title
+    body
+    answer
     createdAt
     updatedAt
     __typename
   }
 }
 ` as GeneratedMutation<
-  APITypes.UpdateTodoMutationVariables,
-  APITypes.UpdateTodoMutation
+  APITypes.UpdateQuestionMutationVariables,
+  APITypes.UpdateQuestionMutation
 >;
-export const deleteTodo = /* GraphQL */ `mutation DeleteTodo(
-  $input: DeleteTodoInput!
-  $condition: ModelTodoConditionInput
+export const deleteQuestion = /* GraphQL */ `mutation DeleteQuestion(
+  $input: DeleteQuestionInput!
+  $condition: ModelQuestionConditionInput
 ) {
-  deleteTodo(input: $input, condition: $condition) {
+  deleteQuestion(input: $input, condition: $condition) {
     id
-    name
-    description
+    title
+    body
+    answer
     createdAt
     updatedAt
     __typename
   }
 }
 ` as GeneratedMutation<
-  APITypes.DeleteTodoMutationVariables,
-  APITypes.DeleteTodoMutation
+  APITypes.DeleteQuestionMutationVariables,
+  APITypes.DeleteQuestionMutation
 >;
