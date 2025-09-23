@@ -1,4 +1,8 @@
-type Question @model @auth(rules: [{ allow: public, operations: [read] }]) {
+type Question @model
+  @auth(rules: [
+    { allow: public, operations: [read, create] },    # Public users
+    { allow: owner, ownerField: "admin", operations: [create, update, delete, read] }  # Admin users
+  ]) {
   id: ID!
   title: String!
   body: String
