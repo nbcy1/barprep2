@@ -1,7 +1,5 @@
-// src/pages/Questions.tsx
 import { useEffect, useState } from 'react';
-import { API } from 'aws-amplify/api';
-import { graphqlOperation } from 'aws-amplify/graphql';
+import { API, graphqlOperation } from '@aws-amplify/api';
 import { listQuestions } from '../graphql/queries';
 
 type Question = {
@@ -24,9 +22,8 @@ export default function Questions() {
       try {
         setLoading(true);
 
-        const result: any = await API.graphql(
-          graphqlOperation(listQuestions)
-        );
+        // Amplify v6 requires graphqlOperation
+        const result: any = await API.graphql(graphqlOperation(listQuestions));
 
         const questionsData = result.data.listQuestions.items;
         setQuestions(questionsData);
@@ -51,13 +48,8 @@ export default function Questions() {
     alert('Answers submitted!');
   };
 
-  if (loading) {
-    return <div style={{ padding: '1rem' }}>Loading questions...</div>;
-  }
-
-  if (error) {
-    return <div style={{ padding: '1rem', color: 'red' }}>Error: {error}</div>;
-  }
+  if (loading) return <div style={{ padding: '1rem' }}>Loading questions...</div>;
+  if (error) return <div style={{ padding: '1rem', color: 'red' }}>Error: {error}</div>;
 
   return (
     <div style={{ padding: '1rem' }}>
@@ -66,14 +58,7 @@ export default function Questions() {
         <p>No questions available yet.</p>
       ) : (
         questions.map(q => (
-          <div
-            key={q.id}
-            style={{
-              marginBottom: '1.5rem',
-              border: '1px solid #ccc',
-              padding: '1rem',
-            }}
-          >
+          <div key={q.id} style={{ marginBottom: '1.5rem', border: '1px solid #ccc', padding: '1rem' }}>
             <h3>{q.title}</h3>
             {q.body && <p>{q.body}</p>}
             <input
@@ -87,13 +72,11 @@ export default function Questions() {
         ))
       )}
       {questions.length > 0 && (
-        <button
-          onClick={handleSubmit}
-          style={{ padding: '0.5rem 1rem', fontSize: '1rem' }}
-        >
+        <button onClick={handleSubmit} style={{ padding: '0.5rem 1rem', fontSize: '1rem' }}>
           Submit Answers
         </button>
       )}
     </div>
   );
 }
+
