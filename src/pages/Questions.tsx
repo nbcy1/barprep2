@@ -1,5 +1,7 @@
+// src/pages/Questions.tsx
 import { useEffect, useState } from 'react';
-import { API, graphqlOperation } from '@aws-amplify/api';
+import { API } from '@aws-amplify/api';
+import { GraphQLQuery } from '@aws-amplify/api-graphql';
 import { listQuestions } from '../graphql/queries';
 
 type Question = {
@@ -22,11 +24,12 @@ export default function Questions() {
       try {
         setLoading(true);
 
-        // Amplify v6 requires graphqlOperation
-        const result: any = await API.graphql(graphqlOperation(listQuestions));
+        // Type-safe API call for Amplify v6
+        const result = (await API.graphql({
+          query: listQuestions
+        })) as { data: { listQuestions: { items: Question[] } } };
 
-        const questionsData = result.data.listQuestions.items;
-        setQuestions(questionsData);
+        setQuestions(result.data.listQuestions.items);
         setError(null);
       } catch (err) {
         console.error('Error fetching questions:', err);
@@ -79,4 +82,3 @@ export default function Questions() {
     </div>
   );
 }
-
