@@ -1,37 +1,42 @@
-import { ModelInit, MutableModel, __modelMeta__, ManagedIdentifier } from "@aws-amplify/datastore";
-// @ts-ignore
-import { LazyLoading, LazyLoadingDisabled } from "@aws-amplify/datastore";
+// src/index.d.ts
 
+export type Question = {
+  id: string;
+  question: string;           // Main question text
+  choices: string[];          // Array of choices
+  answer: string;             // Correct answer
+  topic?: string;             // Optional topic/category
+  createdAt?: string;         // ISO timestamp
+  updatedAt?: string;         // ISO timestamp
+};
 
+// GraphQL input types
+export type CreateQuestionInput = {
+  question: string;
+  choices: string[];
+  answer: string;
+  topic?: string;
+};
 
+export type DeleteQuestionInput = {
+  id: string;
+};
 
-
-type EagerTodo = {
-  readonly [__modelMeta__]: {
-    identifier: ManagedIdentifier<Todo, 'id'>;
-    readOnlyFields: 'createdAt' | 'updatedAt';
+// GraphQL query responses
+export type ListQuestionsResponse = {
+  listQuestions: {
+    items: Question[];
   };
-  readonly id: string;
-  readonly name: string;
-  readonly description?: string | null;
-  readonly createdAt?: string | null;
-  readonly updatedAt?: string | null;
-}
+};
 
-type LazyTodo = {
-  readonly [__modelMeta__]: {
-    identifier: ManagedIdentifier<Todo, 'id'>;
-    readOnlyFields: 'createdAt' | 'updatedAt';
-  };
-  readonly id: string;
-  readonly name: string;
-  readonly description?: string | null;
-  readonly createdAt?: string | null;
-  readonly updatedAt?: string | null;
-}
+export type GetQuestionResponse = {
+  getQuestion: Question | null;
+};
 
-export declare type Todo = LazyLoading extends LazyLoadingDisabled ? EagerTodo : LazyTodo
+export type CreateQuestionResponse = {
+  createQuestion: Question;
+};
 
-export declare const Todo: (new (init: ModelInit<Todo>) => Todo) & {
-  copyOf(source: Todo, mutator: (draft: MutableModel<Todo>) => MutableModel<Todo> | void): Todo;
-}
+export type DeleteQuestionResponse = {
+  deleteQuestion: Question;
+};
