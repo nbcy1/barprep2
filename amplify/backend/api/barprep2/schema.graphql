@@ -4,8 +4,8 @@ type Question @model
     { allow: owner, ownerField: "admin", operations: [create, update, delete, read] }
   ]) {
   id: ID!
-  question: String!        # renamed from title
-  choices: String          # can store comma-separated values
+  question: String!
+  choices: [String!]!      # Changed to array to match your React component
   answer: String
   topic: String
   createdAt: AWSDateTime
