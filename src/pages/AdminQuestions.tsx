@@ -1,15 +1,16 @@
-import { useEffect, useState } from 'react';
-import { generateClient } from 'aws-amplify/api';
-
-const client = generateClient();
+import { useEffect, useState } from "react";
+import { generateClient } from "aws-amplify/api";
 
 export default function AdminQuestions() {
   const [questions, setQuestions] = useState<any[]>([]);
   const [newQuestion, setNewQuestion] = useState({
-    question: '',
-    choices: '',
-    topic: ''
+    question: "",
+    choices: "",
+    topic: ""
   });
+
+  // ✅ Create client inside the component
+  const client = generateClient();
 
   // Fetch questions
   const fetchQuestions = async () => {
@@ -30,7 +31,7 @@ export default function AdminQuestions() {
       });
       setQuestions(res.data.listQuestions.items);
     } catch (err) {
-      console.error('Error fetching questions:', err);
+      console.error("Error fetching questions:", err);
     }
   };
 
@@ -54,16 +55,16 @@ export default function AdminQuestions() {
         variables: {
           input: {
             question: newQuestion.question,
-            choices: JSON.stringify(newQuestion.choices.split(',')),
+            choices: JSON.stringify(newQuestion.choices.split(",")),
             topic: newQuestion.topic,
           },
         },
       });
 
-      setNewQuestion({ question: '', choices: '', topic: '' });
+      setNewQuestion({ question: "", choices: "", topic: "" });
       fetchQuestions();
     } catch (err) {
-      console.error('Error adding question:', err);
+      console.error("Error adding question:", err);
     }
   };
 
@@ -83,12 +84,12 @@ export default function AdminQuestions() {
 
       setQuestions(prev => prev.filter(q => q.id !== id));
     } catch (err) {
-      console.error('Error deleting question:', err);
+      console.error("Error deleting question:", err);
     }
   };
 
   return (
-    <div style={{ padding: '1rem' }}>
+    <div style={{ padding: "1rem" }}>
       <h1>Admin Questions</h1>
 
       <h2>Add New Question</h2>
@@ -116,9 +117,9 @@ export default function AdminQuestions() {
       {questions.map(q => (
         <div key={q.id}>
           <p><strong>{q.question}</strong></p>
-          <p>Choices: {JSON.parse(q.choices).join(', ')}</p>
+          <p>Choices: {JSON.parse(q.choices).join(", ")}</p>
           <p>Topic: {q.topic}</p>
-          <button onClick={() => handleDelete(q.id)} style={{ color: 'red' }}>
+          <button onClick={() => handleDelete(q.id)} style={{ color: "red" }}>
             Delete
           </button>
           <hr />
