@@ -1,11 +1,10 @@
 type Question @model
   @auth(rules: [
-    { allow: public, operations: [read, create] },
-    { allow: owner, ownerField: "admin", operations: [create, update, delete, read] }
+    { allow: public, operations: [read, create, update, delete] }
   ]) {
   id: ID!
   question: String!
-  choices: [String!]!      # Changed to array to match your React component
+  choices: [String!]!
   answer: String
   topic: String
   createdAt: AWSDateTime
