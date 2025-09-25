@@ -8,13 +8,14 @@ type Question = {
   topic?: string;
 };
 
-const client = generateClient();
-
 export default function Questions() {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // ✅ create client inside the component (after Amplify.configure has run)
+  const client = generateClient();
 
   useEffect(() => {
     const fetchQuestions = async () => {
@@ -47,7 +48,7 @@ export default function Questions() {
     };
 
     fetchQuestions();
-  }, []);
+  }, [client]); // ✅ safe because client is created inside the component
 
   const handleChange = (questionId: string, value: string) => {
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
