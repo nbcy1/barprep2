@@ -1,22 +1,23 @@
 import { a } from "@aws-amplify/backend";
 
 /**
- * Export as `auth` so `backend.ts` can import it
+ * Auth resource: Questions and Answers
+ * Matches your schema.graphql
  */
 export const auth = a.schema({
   Question: a
     .model({
       id: a.id(),
-      text: a.string().required(),             // your question text
-      choices: a.string().array().required(),  // multiple choice options
-      answer: a.string(),                      // correct answer (optional)
-      topic: a.string(),                       // added topic field to match schema.graphql
-      createdAt: a.datetime().default(new Date().toISOString()),
-      updatedAt: a.datetime().default(new Date().toISOString()),
+      question: a.string().required(),          // matches GraphQL `question`
+      choices: a.string().array().required(),   // multiple choice options
+      answer: a.string(),                       // optional correct answer
+      topic: a.string(),                        // optional topic
+      createdAt: a.datetime().default(new Date().toISOString()), // AWSDateTime
+      updatedAt: a.datetime().default(new Date().toISOString()), // AWSDateTime
     })
     .authorization((allow) => [
-      allow.authenticated().to(["read"]),                 // users can only read questions
-      allow.group("admin").to(["create", "update", "delete"]), // admins manage questions
+      allow.authenticated().to(["read"]),                   // users can read
+      allow.group("admin").to(["create", "update", "delete"]), // admins manage
     ]),
 
   Answer: a
@@ -29,8 +30,8 @@ export const auth = a.schema({
       updatedAt: a.datetime().default(new Date().toISOString()),
     })
     .authorization((allow) => [
-      allow.authenticated().to(["create", "read"]),
-      allow.group("admin").to(["read", "delete"]),
+      allow.authenticated().to(["create", "read"]),  // users can submit/view their own answers
+      allow.group("admin").to(["read", "delete"]),   // admins can review everything
     ]),
 });
 
