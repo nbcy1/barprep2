@@ -1,13 +1,18 @@
 import { a } from "@aws-amplify/backend";
 
-export const schema = a.schema({
+/**
+ * Export as `auth` so `backend.ts` can import it
+ */
+export const auth = a.schema({
   Question: a
     .model({
       id: a.id(),
-      text: a.string().required(),            // the actual question
-      choices: a.string().array().required(), // multiple choice options
-      answer: a.string(),                     // correct answer (optional)
-      createdAt: a.datetime().default(new Date().toISOString()), // fixed
+      text: a.string().required(),             // your question text
+      choices: a.string().array().required(),  // multiple choice options
+      answer: a.string(),                      // correct answer (optional)
+      topic: a.string(),                       // added topic field to match schema.graphql
+      createdAt: a.datetime().default(new Date().toISOString()),
+      updatedAt: a.datetime().default(new Date().toISOString()),
     })
     .authorization((allow) => [
       allow.authenticated().to(["read"]),                 // users can only read questions
@@ -18,14 +23,15 @@ export const schema = a.schema({
     .model({
       id: a.id(),
       questionId: a.id().required(),
-      selected: a.string().required(),       // the user’s chosen answer
-      userId: a.string().required(),         // who answered (map from signed-in user)
-      createdAt: a.datetime().default(new Date().toISOString()), // fixed
+      selected: a.string().required(),
+      userId: a.string().required(),
+      createdAt: a.datetime().default(new Date().toISOString()),
+      updatedAt: a.datetime().default(new Date().toISOString()),
     })
     .authorization((allow) => [
-      allow.authenticated().to(["create", "read"]),      // users can submit + view their own answers
-      allow.group("admin").to(["read", "delete"]),       // admins can review everything
+      allow.authenticated().to(["create", "read"]),
+      allow.group("admin").to(["read", "delete"]),
     ]),
 });
 
-export type Schema = typeof schema;
+export type AuthSchema = typeof auth;
