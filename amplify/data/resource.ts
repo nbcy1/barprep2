@@ -1,21 +1,20 @@
-import { type ClientSchema, a, defineData } from '@aws-amplify/backend';
+import { a } from "@aws-amplify/backend";
 
-const schema = a.schema({
-  Question: a
+/**
+ * Data resource placeholder
+ */
+export const data = a.schema({
+  Example: a
     .model({
-      question: a.string(),
-      choices: a.json(), // store as JSON array
-      answer: a.string(),
-      topic: a.string(),
+      id: a.id(),
+      name: a.string().required(),
+      createdAt: a.datetime().default(new Date().toISOString()),
+      updatedAt: a.datetime().default(new Date().toISOString()),
     })
-    .authorization((allow) => [allow.guest()]), // open access for now
+    .authorization((allow) => [
+      allow.authenticated().to(["read"]),
+      allow.group("admin").to(["create", "update", "delete"]),
+    ]),
 });
 
-export type Schema = ClientSchema<typeof schema>;
-
-export const data = defineData({
-  schema,
-  authorizationModes: {
-    defaultAuthorizationMode: 'identityPool',
-  },
-});
+export type DataSchema = typeof data;
