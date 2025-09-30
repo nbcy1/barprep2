@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { generateClient } from "aws-amplify/api"; // ✅ new import
+import { useEffect, useState, useMemo } from "react";
+import { generateClient } from "aws-amplify/api";
 
 type Question = {
   id: string;
@@ -14,14 +14,13 @@ export default function Questions() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // ✅ create client inside the component (after Amplify.configure has run)
-  const client = generateClient();
+  // ✅ Create client once using useMemo (more efficient)
+  const client = useMemo(() => generateClient(), []);
 
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
         setLoading(true);
-
         const result = await client.graphql({
           query: `
             query ListQuestions {
@@ -36,7 +35,6 @@ export default function Questions() {
             }
           `,
         });
-
         setQuestions(result.data.listQuestions.items);
         setError(null);
       } catch (err) {
@@ -48,7 +46,7 @@ export default function Questions() {
     };
 
     fetchQuestions();
-  }, [client]); // ✅ safe because client is created inside the component
+  }, []); // ✅ Empty dependency array - client is stable now
 
   const handleChange = (questionId: string, value: string) => {
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
