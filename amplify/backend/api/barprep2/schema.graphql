@@ -5,7 +5,7 @@ type Question @model
   id: ID!
   question: String!
   choices: [String!]!
-  answer: String
+  answer: String!
   topic: String
   createdAt: AWSDateTime
   updatedAt: AWSDateTime
