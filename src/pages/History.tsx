@@ -1,10 +1,8 @@
 "use client"
 
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useState, useMemo } from "react"
 import { generateClient } from "aws-amplify/data"
 import type { Schema } from "../amplify/data/resource"
-
-const client = generateClient<Schema>()
 
 interface Todo {
   id: string
@@ -12,6 +10,9 @@ interface Todo {
 }
 
 export default function History() {
+  // ✅ Move client inside component with useMemo
+  const client = useMemo(() => generateClient<Schema>(), [])
+  
   const [todos, setTodos] = useState<Todo[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -28,7 +29,7 @@ export default function History() {
     }
 
     fetchTodos()
-  }, [])
+  }, [client])
 
   if (loading) return <p>Loading...</p>
   if (!todos.length) return <p>No items found.</p>
