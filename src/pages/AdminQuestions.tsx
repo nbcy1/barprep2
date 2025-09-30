@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { generateClient } from "aws-amplify/api";
 
 export default function AdminQuestions() {
@@ -9,11 +9,11 @@ export default function AdminQuestions() {
     topic: ""
   });
 
-  // ✅ Create client inside the component
-  const client = generateClient();
+  // ✅ Create client once using useMemo
+  const client = useMemo(() => generateClient(), []);
 
-  // Fetch questions
-  const fetchQuestions = async () => {
+  // ✅ Wrap fetchQuestions in useCallback so it can be safely used in useEffect
+  const fetchQuestions = useCallback(async () => {
     try {
       const res = await client.graphql({
         query: `
@@ -33,16 +33,15 @@ export default function AdminQuestions() {
     } catch (err) {
       console.error("Error fetching questions:", err);
     }
-  };
+  }, [client]);
 
   useEffect(() => {
     fetchQuestions();
-  }, []);
+  }, [fetchQuestions]);
 
   // Add new question
   const handleAdd = async () => {
     if (!newQuestion.question || !newQuestion.choices || !newQuestion.topic) return;
-
     try {
       await client.graphql({
         query: `
@@ -60,7 +59,6 @@ export default function AdminQuestions() {
           },
         },
       });
-
       setNewQuestion({ question: "", choices: "", topic: "" });
       fetchQuestions();
     } catch (err) {
@@ -81,7 +79,6 @@ export default function AdminQuestions() {
         `,
         variables: { input: { id } },
       });
-
       setQuestions(prev => prev.filter(q => q.id !== id));
     } catch (err) {
       console.error("Error deleting question:", err);
@@ -91,40 +88,53 @@ export default function AdminQuestions() {
   return (
     <div style={{ padding: "1rem" }}>
       <h1>Admin Questions</h1>
-
+      
       <h2>Add New Question</h2>
-      <input
-        type="text"
-        placeholder="Question"
-        value={newQuestion.question}
-        onChange={e => setNewQuestion({ ...newQuestion, question: e.target.value })}
-      />
-      <input
-        type="text"
-        placeholder="Choices (comma-separated)"
-        value={newQuestion.choices}
-        onChange={e => setNewQuestion({ ...newQuestion, choices: e.target.value })}
-      />
-      <input
-        type="text"
-        placeholder="Topic"
-        value={newQuestion.topic}
-        onChange={e => setNewQuestion({ ...newQuestion, topic: e.target.value })}
-      />
-      <button onClick={handleAdd}>Add Question</button>
+      <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", maxWidth: "500px" }}>
+        <input
+          type="text"
+          placeholder="Question"
+          value={newQuestion.question}
+          onChange={e => setNewQuestion({ ...newQuestion, question: e.target.value })}
+          style={{ padding: "0.5rem" }}
+        />
+        <input
+          type="text"
+          placeholder="Choices (comma-separated)"
+          value={newQuestion.choices}
+          onChange={e => setNewQuestion({ ...newQuestion, choices: e.target.value })}
+          style={{ padding: "0.5rem" }}
+        />
+        <input
+          type="text"
+          placeholder="Topic"
+          value={newQuestion.topic}
+          onChange={e => setNewQuestion({ ...newQuestion, topic: e.target.value })}
+          style={{ padding: "0.5rem" }}
+        />
+        <button onClick={handleAdd} style={{ padding: "0.5rem 1rem" }}>
+          Add Question
+        </button>
+      </div>
 
       <h2>Existing Questions</h2>
-      {questions.map(q => (
-        <div key={q.id}>
-          <p><strong>{q.question}</strong></p>
-          <p>Choices: {JSON.parse(q.choices).join(", ")}</p>
-          <p>Topic: {q.topic}</p>
-          <button onClick={() => handleDelete(q.id)} style={{ color: "red" }}>
-            Delete
-          </button>
-          <hr />
-        </div>
-      ))}
+      {questions.length === 0 ? (
+        <p>No questions yet.</p>
+      ) : (
+        questions.map(q => (
+          <div key={q.id} style={{ marginBottom: "1rem", padding: "1rem", border: "1px solid #ccc" }}>
+            <p><strong>{q.question}</strong></p>
+            <p>Choices: {JSON.parse(q.choices).join(", ")}</p>
+            <p>Topic: {q.topic}</p>
+            <button 
+              onClick={() => handleDelete(q.id)} 
+              style={{ color: "white", backgroundColor: "red", padding: "0.5rem 1rem", border: "none", cursor: "pointer" }}
+            >
+              Delete
+            </button>
+          </div>
+        ))
+      )}
     </div>
   );
 }
