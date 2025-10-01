@@ -6,6 +6,7 @@ type Question = {
   question: string;
   choices: string[];
   answer: string;
+  explanation?: string;
   topic?: string;
 };
 
@@ -31,6 +32,7 @@ export default function Questions() {
                   question
                   choices
                   answer
+                  explanation
                   topic
                 }
               }
@@ -50,7 +52,6 @@ export default function Questions() {
   }, [client]);
 
   const handleChoiceSelect = (questionId: string, choice: string) => {
-    // Once answered, lock in the answer (no changing)
     if (answers[questionId]) return;
     setAnswers((prev) => ({ ...prev, [questionId]: choice }));
   };
@@ -143,7 +144,6 @@ export default function Questions() {
                     let backgroundColor = "white";
                     let borderColor = "#ccc";
                     
-                    // Show immediate feedback after selecting an answer
                     if (hasAnswered) {
                       if (isCorrectAnswer) {
                         backgroundColor = "#d4edda";
@@ -192,9 +192,18 @@ export default function Questions() {
                   })}
                 </div>
 
-                {answers[q.id] && answers[q.id] !== q.answer && (
-                  <div style={{ marginTop: "1rem", padding: "0.75rem", backgroundColor: "#f8d7da", borderRadius: "4px" }}>
-                    <strong>Correct answer:</strong> {q.answer}
+                {hasAnswered && q.explanation && (
+                  <div style={{ 
+                    marginTop: "1rem", 
+                    padding: "1rem", 
+                    backgroundColor: isCorrect ? "#d4edda" : "#fff3cd",
+                    borderRadius: "4px",
+                    borderLeft: `4px solid ${isCorrect ? "#28a745" : "#ffc107"}`
+                  }}>
+                    <strong style={{ display: "block", marginBottom: "0.5rem" }}>
+                      Explanation:
+                    </strong>
+                    <p style={{ margin: 0 }}>{q.explanation}</p>
                   </div>
                 )}
               </div>
