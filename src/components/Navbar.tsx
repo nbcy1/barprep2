@@ -2,14 +2,17 @@ import { Link } from 'react-router-dom';
 
 export default function Navbar() {
   return (
-    <nav style={{ padding: '1rem', borderBottom: '1px solid #ccc' }}>
-      <Link to="/" style={{ marginRight: '1rem' }}>Home</Link>
-      <Link to="/dashboard" style={{ marginRight: '1rem' }}>Dashboard</Link>
-      <Link to="/questions" style={{ marginRight: '1rem' }}>Questions</Link>
-      <Link to="/history" style={{ marginRight: '1rem' }}>History</Link>
-      <Link to="/account" style={{ marginRight: '1rem' }}>Account</Link>
-      <Link to="/admin-questions" style={{ marginRight: '1rem' }}>Admin Questions</Link>
-      <Link to="/login">Login</Link>
+    <nav style={{ backgroundColor: "#333", padding: "1rem" }}>
+      <ul style={{ listStyle: "none", display: "flex", gap: "2rem", margin: 0, padding: 0 }}>
+        <li><Link to="/" style={{ color: "white", textDecoration: "none" }}>Home</Link></li>
+        <li><Link to="/dashboard" style={{ color: "white", textDecoration: "none" }}>Dashboard</Link></li>
+        <li><Link to="/questions" style={{ color: "white", textDecoration: "none" }}>Questions</Link></li>
+        <li><Link to="/quiz" style={{ color: "white", textDecoration: "none" }}>Quiz</Link></li>
+        <li><Link to="/history" style={{ color: "white", textDecoration: "none" }}>History</Link></li>
+        <li><Link to="/account" style={{ color: "white", textDecoration: "none" }}>Account</Link></li>
+        <li><Link to="/admin-questions" style={{ color: "white", textDecoration: "none" }}>Admin</Link></li>
+        <li><Link to="/login" style={{ color: "white", textDecoration: "none" }}>Login</Link></li>
+      </ul>
     </nav>
   );
 }
