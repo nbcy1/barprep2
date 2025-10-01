@@ -11,3 +11,20 @@ type Question @model
   createdAt: AWSDateTime
   updatedAt: AWSDateTime
 }
+
+type QuizResult @model
+  @auth(rules: [
+    { allow: owner, operations: [create, read, update, delete] }
+    { allow: private, operations: [read] }
+  ]) {
+  id: ID!
+  userId: String! @index(name: "byUser")
+  topic: String!
+  totalQuestions: Int!
+  correctAnswers: Int!
+  score: Float!
+  questionsAsked: [String]
+  userAnswers: AWSJSON
+  completedAt: AWSDateTime!
+  owner: String
+}
