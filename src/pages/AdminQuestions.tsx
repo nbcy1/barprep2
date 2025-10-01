@@ -7,6 +7,7 @@ export default function AdminQuestions() {
     question: "",
     choices: ["", "", "", ""],
     answer: "",
+    explanation: "",
     topic: ""
   });
 
@@ -23,6 +24,7 @@ export default function AdminQuestions() {
                 question
                 choices
                 answer
+                explanation
                 topic
               }
             }
@@ -76,6 +78,18 @@ export default function AdminQuestions() {
     }
 
     try {
+      const input: any = {
+        question: newQuestion.question,
+        choices: filledChoices,
+        answer: newQuestion.answer,
+        topic: newQuestion.topic,
+      };
+
+      // Only include explanation if it's not empty
+      if (newQuestion.explanation.trim()) {
+        input.explanation = newQuestion.explanation;
+      }
+
       await client.graphql({
         query: `
           mutation CreateQuestion($input: CreateQuestionInput!) {
@@ -84,21 +98,15 @@ export default function AdminQuestions() {
               question
               choices
               answer
+              explanation
               topic
             }
           }
         `,
-        variables: {
-          input: {
-            question: newQuestion.question,
-            choices: filledChoices,
-            answer: newQuestion.answer,
-            topic: newQuestion.topic,
-          },
-        },
+        variables: { input },
       });
       
-      setNewQuestion({ question: "", choices: ["", "", "", ""], answer: "", topic: "" });
+      setNewQuestion({ question: "", choices: ["", "", "", ""], answer: "", explanation: "", topic: "" });
       fetchQuestions();
       alert("Question added successfully!");
     } catch (err) {
@@ -136,7 +144,7 @@ export default function AdminQuestions() {
         
         <div style={{ marginBottom: "1rem" }}>
           <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "bold" }}>
-            Question:
+            Question: <span style={{ color: "red" }}>*</span>
           </label>
           <textarea
             placeholder="Enter the question"
@@ -148,7 +156,7 @@ export default function AdminQuestions() {
 
         <div style={{ marginBottom: "1rem" }}>
           <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "bold" }}>
-            Answer Choices:
+            Answer Choices: <span style={{ color: "red" }}>*</span>
           </label>
           {newQuestion.choices.map((choice, index) => (
             <div key={index} style={{ display: "flex", gap: "0.5rem", marginBottom: "0.5rem" }}>
@@ -162,7 +170,7 @@ export default function AdminQuestions() {
               {newQuestion.choices.length > 2 && (
                 <button 
                   onClick={() => removeChoice(index)}
-                  style={{ padding: "0.5rem 1rem", backgroundColor: "#dc3545", color: "white", border: "none", cursor: "pointer" }}
+                  style={{ padding: "0.5rem 1rem", backgroundColor: "#dc3545", color: "white", border: "none", cursor: "pointer", borderRadius: "4px" }}
                 >
                   Remove
                 </button>
@@ -171,7 +179,7 @@ export default function AdminQuestions() {
           ))}
           <button 
             onClick={addChoice}
-            style={{ padding: "0.5rem 1rem", marginTop: "0.5rem", backgroundColor: "#28a745", color: "white", border: "none", cursor: "pointer" }}
+            style={{ padding: "0.5rem 1rem", marginTop: "0.5rem", backgroundColor: "#28a745", color: "white", border: "none", cursor: "pointer", borderRadius: "4px" }}
           >
             + Add Another Choice
           </button>
@@ -179,7 +187,7 @@ export default function AdminQuestions() {
 
         <div style={{ marginBottom: "1rem" }}>
           <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "bold" }}>
-            Correct Answer:
+            Correct Answer: <span style={{ color: "red" }}>*</span>
           </label>
           <select
             value={newQuestion.answer}
@@ -199,7 +207,19 @@ export default function AdminQuestions() {
 
         <div style={{ marginBottom: "1rem" }}>
           <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "bold" }}>
-            Topic:
+            Explanation: <span style={{ color: "#666", fontSize: "0.9rem", fontWeight: "normal" }}>(optional)</span>
+          </label>
+          <textarea
+            placeholder="Explain why this is the correct answer (optional but recommended)"
+            value={newQuestion.explanation}
+            onChange={e => setNewQuestion({ ...newQuestion, explanation: e.target.value })}
+            style={{ width: "100%", padding: "0.5rem", minHeight: "100px" }}
+          />
+        </div>
+
+        <div style={{ marginBottom: "1rem" }}>
+          <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "bold" }}>
+            Topic: <span style={{ color: "red" }}>*</span>
           </label>
           <input
             type="text"
@@ -212,7 +232,7 @@ export default function AdminQuestions() {
 
         <button 
           onClick={handleAdd}
-          style={{ padding: "0.75rem 2rem", backgroundColor: "#007bff", color: "white", border: "none", cursor: "pointer", fontSize: "1rem" }}
+          style={{ padding: "0.75rem 2rem", backgroundColor: "#007bff", color: "white", border: "none", cursor: "pointer", fontSize: "1rem", borderRadius: "6px" }}
         >
           Add Question
         </button>
@@ -247,9 +267,15 @@ export default function AdminQuestions() {
                   ))}
                 </ul>
               </div>
+              {q.explanation && (
+                <div style={{ marginTop: "0.75rem", padding: "0.75rem", backgroundColor: "#f8f9fa", borderRadius: "4px", borderLeft: "3px solid #007bff" }}>
+                  <strong>Explanation:</strong>
+                  <p style={{ margin: "0.5rem 0 0 0" }}>{q.explanation}</p>
+                </div>
+              )}
               <button 
                 onClick={() => handleDelete(q.id)} 
-                style={{ padding: "0.5rem 1rem", backgroundColor: "#dc3545", color: "white", border: "none", cursor: "pointer" }}
+                style={{ padding: "0.5rem 1rem", backgroundColor: "#dc3545", color: "white", border: "none", cursor: "pointer", marginTop: "1rem", borderRadius: "4px" }}
               >
                 Delete Question
               </button>
