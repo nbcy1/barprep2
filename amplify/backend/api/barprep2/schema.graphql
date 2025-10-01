@@ -6,6 +6,7 @@ type Question @model
   question: String!
   choices: [String!]!
   answer: String!
+  explanation: String
   topic: String
   createdAt: AWSDateTime
   updatedAt: AWSDateTime
