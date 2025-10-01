@@ -14,9 +14,11 @@ export const createQuestion = /* GraphQL */ `mutation CreateQuestion(
 ) {
   createQuestion(input: $input, condition: $condition) {
     id
-    title
-    body
+    question
+    choices
     answer
+    explanation
+    topic
     createdAt
     updatedAt
     __typename
@@ -32,9 +34,11 @@ export const updateQuestion = /* GraphQL */ `mutation UpdateQuestion(
 ) {
   updateQuestion(input: $input, condition: $condition) {
     id
-    title
-    body
+    question
+    choices
     answer
+    explanation
+    topic
     createdAt
     updatedAt
     __typename
@@ -50,9 +54,11 @@ export const deleteQuestion = /* GraphQL */ `mutation DeleteQuestion(
 ) {
   deleteQuestion(input: $input, condition: $condition) {
     id
-    title
-    body
+    question
+    choices
     answer
+    explanation
+    topic
     createdAt
     updatedAt
     __typename
@@ -61,4 +67,76 @@ export const deleteQuestion = /* GraphQL */ `mutation DeleteQuestion(
 ` as GeneratedMutation<
   APITypes.DeleteQuestionMutationVariables,
   APITypes.DeleteQuestionMutation
+>;
+export const createQuizResult = /* GraphQL */ `mutation CreateQuizResult(
+  $input: CreateQuizResultInput!
+  $condition: ModelQuizResultConditionInput
+) {
+  createQuizResult(input: $input, condition: $condition) {
+    id
+    userId
+    topic
+    totalQuestions
+    correctAnswers
+    score
+    questionsAsked
+    userAnswers
+    completedAt
+    owner
+    createdAt
+    updatedAt
+    __typename
+  }
+}
+` as GeneratedMutation<
+  APITypes.CreateQuizResultMutationVariables,
+  APITypes.CreateQuizResultMutation
+>;
+export const updateQuizResult = /* GraphQL */ `mutation UpdateQuizResult(
+  $input: UpdateQuizResultInput!
+  $condition: ModelQuizResultConditionInput
+) {
+  updateQuizResult(input: $input, condition: $condition) {
+    id
+    userId
+    topic
+    totalQuestions
+    correctAnswers
+    score
+    questionsAsked
+    userAnswers
+    completedAt
+    owner
+    createdAt
+    updatedAt
+    __typename
+  }
+}
+` as GeneratedMutation<
+  APITypes.UpdateQuizResultMutationVariables,
+  APITypes.UpdateQuizResultMutation
+>;
+export const deleteQuizResult = /* GraphQL */ `mutation DeleteQuizResult(
+  $input: DeleteQuizResultInput!
+  $condition: ModelQuizResultConditionInput
+) {
+  deleteQuizResult(input: $input, condition: $condition) {
+    id
+    userId
+    topic
+    totalQuestions
+    correctAnswers
+    score
+    questionsAsked
+    userAnswers
+    completedAt
+    owner
+    createdAt
+    updatedAt
+    __typename
+  }
+}
+` as GeneratedMutation<
+  APITypes.DeleteQuizResultMutationVariables,
+  APITypes.DeleteQuizResultMutation
 >;

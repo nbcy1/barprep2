@@ -11,9 +11,11 @@ type GeneratedQuery<InputType, OutputType> = string & {
 export const getQuestion = /* GraphQL */ `query GetQuestion($id: ID!) {
   getQuestion(id: $id) {
     id
-    title
-    body
+    question
+    choices
     answer
+    explanation
+    topic
     createdAt
     updatedAt
     __typename
@@ -31,9 +33,11 @@ export const listQuestions = /* GraphQL */ `query ListQuestions(
   listQuestions(filter: $filter, limit: $limit, nextToken: $nextToken) {
     items {
       id
-      title
-      body
+      question
+      choices
       answer
+      explanation
+      topic
       createdAt
       updatedAt
       __typename
@@ -45,4 +49,91 @@ export const listQuestions = /* GraphQL */ `query ListQuestions(
 ` as GeneratedQuery<
   APITypes.ListQuestionsQueryVariables,
   APITypes.ListQuestionsQuery
+>;
+export const getQuizResult = /* GraphQL */ `query GetQuizResult($id: ID!) {
+  getQuizResult(id: $id) {
+    id
+    userId
+    topic
+    totalQuestions
+    correctAnswers
+    score
+    questionsAsked
+    userAnswers
+    completedAt
+    owner
+    createdAt
+    updatedAt
+    __typename
+  }
+}
+` as GeneratedQuery<
+  APITypes.GetQuizResultQueryVariables,
+  APITypes.GetQuizResultQuery
+>;
+export const listQuizResults = /* GraphQL */ `query ListQuizResults(
+  $filter: ModelQuizResultFilterInput
+  $limit: Int
+  $nextToken: String
+) {
+  listQuizResults(filter: $filter, limit: $limit, nextToken: $nextToken) {
+    items {
+      id
+      userId
+      topic
+      totalQuestions
+      correctAnswers
+      score
+      questionsAsked
+      userAnswers
+      completedAt
+      owner
+      createdAt
+      updatedAt
+      __typename
+    }
+    nextToken
+    __typename
+  }
+}
+` as GeneratedQuery<
+  APITypes.ListQuizResultsQueryVariables,
+  APITypes.ListQuizResultsQuery
+>;
+export const quizResultsByUserId = /* GraphQL */ `query QuizResultsByUserId(
+  $userId: String!
+  $sortDirection: ModelSortDirection
+  $filter: ModelQuizResultFilterInput
+  $limit: Int
+  $nextToken: String
+) {
+  quizResultsByUserId(
+    userId: $userId
+    sortDirection: $sortDirection
+    filter: $filter
+    limit: $limit
+    nextToken: $nextToken
+  ) {
+    items {
+      id
+      userId
+      topic
+      totalQuestions
+      correctAnswers
+      score
+      questionsAsked
+      userAnswers
+      completedAt
+      owner
+      createdAt
+      updatedAt
+      __typename
+    }
+    nextToken
+    __typename
+  }
+}
+` as GeneratedQuery<
+  APITypes.QuizResultsByUserIdQueryVariables,
+  APITypes.QuizResultsByUserIdQuery
 >;

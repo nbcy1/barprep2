@@ -4,8 +4,8 @@
  * Any changes to this file will be overwritten when running amplify pull. *
  **************************************************************************/
 
-// Commented out to prevent module-level generateClient() calls before Amplify.configure()
-// export { default as QuestionCreateForm } from "./QuestionCreateForm";
-// export { default as QuestionUpdateForm } from "./QuestionUpdateForm";
-
+export { default as QuestionCreateForm } from "./QuestionCreateForm";
+export { default as QuestionUpdateForm } from "./QuestionUpdateForm";
+export { default as QuizResultCreateForm } from "./QuizResultCreateForm";
+export { default as QuizResultUpdateForm } from "./QuizResultUpdateForm";
 export { default as studioTheme } from "./studioTheme";

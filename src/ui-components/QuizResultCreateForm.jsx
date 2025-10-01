@@ -15,12 +15,13 @@ import {
   Icon,
   ScrollView,
   Text,
+  TextAreaField,
   TextField,
   useTheme,
 } from "@aws-amplify/ui-react";
 import { fetchByPath, getOverrideProps, validateField } from "./utils";
 import { generateClient } from "aws-amplify/api";
-import { createQuestion } from "../graphql/mutations";
+import { createQuizResult } from "../graphql/mutations";
 const client = generateClient();
 function ArrayField({
   items = [],
@@ -177,7 +178,7 @@ function ArrayField({
     </React.Fragment>
   );
 }
-export default function QuestionCreateForm(props) {
+export default function QuizResultCreateForm(props) {
   const {
     clearOnSuccess = true,
     onSuccess,
@@ -189,45 +190,62 @@ export default function QuestionCreateForm(props) {
     ...rest
   } = props;
   const initialValues = {
-    question: "",
-    choices: [],
-    answer: "",
-    explanation: "",
+    userId: "",
     topic: "",
-    createdAt: "",
-    updatedAt: "",
+    totalQuestions: "",
+    correctAnswers: "",
+    score: "",
+    questionsAsked: [],
+    userAnswers: "",
+    completedAt: "",
+    owner: "",
   };
-  const [question, setQuestion] = React.useState(initialValues.question);
-  const [choices, setChoices] = React.useState(initialValues.choices);
-  const [answer, setAnswer] = React.useState(initialValues.answer);
-  const [explanation, setExplanation] = React.useState(
-    initialValues.explanation
-  );
+  const [userId, setUserId] = React.useState(initialValues.userId);
   const [topic, setTopic] = React.useState(initialValues.topic);
-  const [createdAt, setCreatedAt] = React.useState(initialValues.createdAt);
-  const [updatedAt, setUpdatedAt] = React.useState(initialValues.updatedAt);
+  const [totalQuestions, setTotalQuestions] = React.useState(
+    initialValues.totalQuestions
+  );
+  const [correctAnswers, setCorrectAnswers] = React.useState(
+    initialValues.correctAnswers
+  );
+  const [score, setScore] = React.useState(initialValues.score);
+  const [questionsAsked, setQuestionsAsked] = React.useState(
+    initialValues.questionsAsked
+  );
+  const [userAnswers, setUserAnswers] = React.useState(
+    initialValues.userAnswers
+  );
+  const [completedAt, setCompletedAt] = React.useState(
+    initialValues.completedAt
+  );
+  const [owner, setOwner] = React.useState(initialValues.owner);
   const [errors, setErrors] = React.useState({});
   const resetStateValues = () => {
-    setQuestion(initialValues.question);
-    setChoices(initialValues.choices);
-    setCurrentChoicesValue("");
-    setAnswer(initialValues.answer);
-    setExplanation(initialValues.explanation);
+    setUserId(initialValues.userId);
     setTopic(initialValues.topic);
-    setCreatedAt(initialValues.createdAt);
-    setUpdatedAt(initialValues.updatedAt);
+    setTotalQuestions(initialValues.totalQuestions);
+    setCorrectAnswers(initialValues.correctAnswers);
+    setScore(initialValues.score);
+    setQuestionsAsked(initialValues.questionsAsked);
+    setCurrentQuestionsAskedValue("");
+    setUserAnswers(initialValues.userAnswers);
+    setCompletedAt(initialValues.completedAt);
+    setOwner(initialValues.owner);
     setErrors({});
   };
-  const [currentChoicesValue, setCurrentChoicesValue] = React.useState("");
-  const choicesRef = React.createRef();
+  const [currentQuestionsAskedValue, setCurrentQuestionsAskedValue] =
+    React.useState("");
+  const questionsAskedRef = React.createRef();
   const validations = {
-    question: [{ type: "Required" }],
-    choices: [{ type: "Required" }],
-    answer: [{ type: "Required" }],
-    explanation: [],
-    topic: [],
-    createdAt: [],
-    updatedAt: [],
+    userId: [{ type: "Required" }],
+    topic: [{ type: "Required" }],
+    totalQuestions: [{ type: "Required" }],
+    correctAnswers: [{ type: "Required" }],
+    score: [{ type: "Required" }],
+    questionsAsked: [],
+    userAnswers: [{ type: "JSON" }],
+    completedAt: [{ type: "Required" }],
+    owner: [],
   };
   const runValidationTasks = async (
     fieldName,
@@ -272,13 +290,15 @@ export default function QuestionCreateForm(props) {
       onSubmit={async (event) => {
         event.preventDefault();
         let modelFields = {
-          question,
-          choices,
-          answer,
-          explanation,
+          userId,
           topic,
-          createdAt,
-          updatedAt,
+          totalQuestions,
+          correctAnswers,
+          score,
+          questionsAsked,
+          userAnswers,
+          completedAt,
+          owner,
         };
         const validationResponses = await Promise.all(
           Object.keys(validations).reduce((promises, fieldName) => {
@@ -309,7 +329,7 @@ export default function QuestionCreateForm(props) {
             }
           });
           await client.graphql({
-            query: createQuestion.replaceAll("__typename", ""),
+            query: createQuizResult.replaceAll("__typename", ""),
             variables: {
               input: {
                 ...modelFields,
@@ -329,166 +349,59 @@ export default function QuestionCreateForm(props) {
           }
         }
       }}
-      {...getOverrideProps(overrides, "QuestionCreateForm")}
+      {...getOverrideProps(overrides, "QuizResultCreateForm")}
       {...rest}
     >
       <TextField
-        label="Question"
+        label="User id"
         isRequired={true}
         isReadOnly={false}
-        value={question}
+        value={userId}
         onChange={(e) => {
           let { value } = e.target;
           if (onChange) {
             const modelFields = {
-              question: value,
-              choices,
-              answer,
-              explanation,
+              userId: value,
               topic,
-              createdAt,
-              updatedAt,
+              totalQuestions,
+              correctAnswers,
+              score,
+              questionsAsked,
+              userAnswers,
+              completedAt,
+              owner,
             };
             const result = onChange(modelFields);
-            value = result?.question ?? value;
+            value = result?.userId ?? value;
           }
-          if (errors.question?.hasError) {
-            runValidationTasks("question", value);
+          if (errors.userId?.hasError) {
+            runValidationTasks("userId", value);
           }
-          setQuestion(value);
+          setUserId(value);
         }}
-        onBlur={() => runValidationTasks("question", question)}
-        errorMessage={errors.question?.errorMessage}
-        hasError={errors.question?.hasError}
-        {...getOverrideProps(overrides, "question")}
-      ></TextField>
-      <ArrayField
-        onChange={async (items) => {
-          let values = items;
-          if (onChange) {
-            const modelFields = {
-              question,
-              choices: values,
-              answer,
-              explanation,
-              topic,
-              createdAt,
-              updatedAt,
-            };
-            const result = onChange(modelFields);
-            values = result?.choices ?? values;
-          }
-          setChoices(values);
-          setCurrentChoicesValue("");
-        }}
-        currentFieldValue={currentChoicesValue}
-        label={"Choices"}
-        items={choices}
-        hasError={errors?.choices?.hasError}
-        runValidationTasks={async () =>
-          await runValidationTasks("choices", currentChoicesValue)
-        }
-        errorMessage={errors?.choices?.errorMessage}
-        setFieldValue={setCurrentChoicesValue}
-        inputFieldRef={choicesRef}
-        defaultFieldValue={""}
-      >
-        <TextField
-          label="Choices"
-          isRequired={true}
-          isReadOnly={false}
-          value={currentChoicesValue}
-          onChange={(e) => {
-            let { value } = e.target;
-            if (errors.choices?.hasError) {
-              runValidationTasks("choices", value);
-            }
-            setCurrentChoicesValue(value);
-          }}
-          onBlur={() => runValidationTasks("choices", currentChoicesValue)}
-          errorMessage={errors.choices?.errorMessage}
-          hasError={errors.choices?.hasError}
-          ref={choicesRef}
-          labelHidden={true}
-          {...getOverrideProps(overrides, "choices")}
-        ></TextField>
-      </ArrayField>
-      <TextField
-        label="Answer"
-        isRequired={true}
-        isReadOnly={false}
-        value={answer}
-        onChange={(e) => {
-          let { value } = e.target;
-          if (onChange) {
-            const modelFields = {
-              question,
-              choices,
-              answer: value,
-              explanation,
-              topic,
-              createdAt,
-              updatedAt,
-            };
-            const result = onChange(modelFields);
-            value = result?.answer ?? value;
-          }
-          if (errors.answer?.hasError) {
-            runValidationTasks("answer", value);
-          }
-          setAnswer(value);
-        }}
-        onBlur={() => runValidationTasks("answer", answer)}
-        errorMessage={errors.answer?.errorMessage}
-        hasError={errors.answer?.hasError}
-        {...getOverrideProps(overrides, "answer")}
-      ></TextField>
-      <TextField
-        label="Explanation"
-        isRequired={false}
-        isReadOnly={false}
-        value={explanation}
-        onChange={(e) => {
-          let { value } = e.target;
-          if (onChange) {
-            const modelFields = {
-              question,
-              choices,
-              answer,
-              explanation: value,
-              topic,
-              createdAt,
-              updatedAt,
-            };
-            const result = onChange(modelFields);
-            value = result?.explanation ?? value;
-          }
-          if (errors.explanation?.hasError) {
-            runValidationTasks("explanation", value);
-          }
-          setExplanation(value);
-        }}
-        onBlur={() => runValidationTasks("explanation", explanation)}
-        errorMessage={errors.explanation?.errorMessage}
-        hasError={errors.explanation?.hasError}
-        {...getOverrideProps(overrides, "explanation")}
+        onBlur={() => runValidationTasks("userId", userId)}
+        errorMessage={errors.userId?.errorMessage}
+        hasError={errors.userId?.hasError}
+        {...getOverrideProps(overrides, "userId")}
       ></TextField>
       <TextField
         label="Topic"
-        isRequired={false}
+        isRequired={true}
         isReadOnly={false}
         value={topic}
         onChange={(e) => {
           let { value } = e.target;
           if (onChange) {
             const modelFields = {
-              question,
-              choices,
-              answer,
-              explanation,
+              userId,
               topic: value,
-              createdAt,
-              updatedAt,
+              totalQuestions,
+              correctAnswers,
+              score,
+              questionsAsked,
+              userAnswers,
+              completedAt,
+              owner,
             };
             const result = onChange(modelFields);
             value = result?.topic ?? value;
@@ -504,68 +417,264 @@ export default function QuestionCreateForm(props) {
         {...getOverrideProps(overrides, "topic")}
       ></TextField>
       <TextField
-        label="Created at"
-        isRequired={false}
+        label="Total questions"
+        isRequired={true}
         isReadOnly={false}
-        type="datetime-local"
-        value={createdAt && convertToLocal(new Date(createdAt))}
+        type="number"
+        step="any"
+        value={totalQuestions}
         onChange={(e) => {
-          let value =
-            e.target.value === "" ? "" : new Date(e.target.value).toISOString();
+          let value = isNaN(parseInt(e.target.value))
+            ? e.target.value
+            : parseInt(e.target.value);
           if (onChange) {
             const modelFields = {
-              question,
-              choices,
-              answer,
-              explanation,
+              userId,
               topic,
-              createdAt: value,
-              updatedAt,
+              totalQuestions: value,
+              correctAnswers,
+              score,
+              questionsAsked,
+              userAnswers,
+              completedAt,
+              owner,
             };
             const result = onChange(modelFields);
-            value = result?.createdAt ?? value;
+            value = result?.totalQuestions ?? value;
           }
-          if (errors.createdAt?.hasError) {
-            runValidationTasks("createdAt", value);
+          if (errors.totalQuestions?.hasError) {
+            runValidationTasks("totalQuestions", value);
           }
-          setCreatedAt(value);
+          setTotalQuestions(value);
         }}
-        onBlur={() => runValidationTasks("createdAt", createdAt)}
-        errorMessage={errors.createdAt?.errorMessage}
-        hasError={errors.createdAt?.hasError}
-        {...getOverrideProps(overrides, "createdAt")}
+        onBlur={() => runValidationTasks("totalQuestions", totalQuestions)}
+        errorMessage={errors.totalQuestions?.errorMessage}
+        hasError={errors.totalQuestions?.hasError}
+        {...getOverrideProps(overrides, "totalQuestions")}
       ></TextField>
       <TextField
-        label="Updated at"
+        label="Correct answers"
+        isRequired={true}
+        isReadOnly={false}
+        type="number"
+        step="any"
+        value={correctAnswers}
+        onChange={(e) => {
+          let value = isNaN(parseInt(e.target.value))
+            ? e.target.value
+            : parseInt(e.target.value);
+          if (onChange) {
+            const modelFields = {
+              userId,
+              topic,
+              totalQuestions,
+              correctAnswers: value,
+              score,
+              questionsAsked,
+              userAnswers,
+              completedAt,
+              owner,
+            };
+            const result = onChange(modelFields);
+            value = result?.correctAnswers ?? value;
+          }
+          if (errors.correctAnswers?.hasError) {
+            runValidationTasks("correctAnswers", value);
+          }
+          setCorrectAnswers(value);
+        }}
+        onBlur={() => runValidationTasks("correctAnswers", correctAnswers)}
+        errorMessage={errors.correctAnswers?.errorMessage}
+        hasError={errors.correctAnswers?.hasError}
+        {...getOverrideProps(overrides, "correctAnswers")}
+      ></TextField>
+      <TextField
+        label="Score"
+        isRequired={true}
+        isReadOnly={false}
+        type="number"
+        step="any"
+        value={score}
+        onChange={(e) => {
+          let value = isNaN(parseFloat(e.target.value))
+            ? e.target.value
+            : parseFloat(e.target.value);
+          if (onChange) {
+            const modelFields = {
+              userId,
+              topic,
+              totalQuestions,
+              correctAnswers,
+              score: value,
+              questionsAsked,
+              userAnswers,
+              completedAt,
+              owner,
+            };
+            const result = onChange(modelFields);
+            value = result?.score ?? value;
+          }
+          if (errors.score?.hasError) {
+            runValidationTasks("score", value);
+          }
+          setScore(value);
+        }}
+        onBlur={() => runValidationTasks("score", score)}
+        errorMessage={errors.score?.errorMessage}
+        hasError={errors.score?.hasError}
+        {...getOverrideProps(overrides, "score")}
+      ></TextField>
+      <ArrayField
+        onChange={async (items) => {
+          let values = items;
+          if (onChange) {
+            const modelFields = {
+              userId,
+              topic,
+              totalQuestions,
+              correctAnswers,
+              score,
+              questionsAsked: values,
+              userAnswers,
+              completedAt,
+              owner,
+            };
+            const result = onChange(modelFields);
+            values = result?.questionsAsked ?? values;
+          }
+          setQuestionsAsked(values);
+          setCurrentQuestionsAskedValue("");
+        }}
+        currentFieldValue={currentQuestionsAskedValue}
+        label={"Questions asked"}
+        items={questionsAsked}
+        hasError={errors?.questionsAsked?.hasError}
+        runValidationTasks={async () =>
+          await runValidationTasks("questionsAsked", currentQuestionsAskedValue)
+        }
+        errorMessage={errors?.questionsAsked?.errorMessage}
+        setFieldValue={setCurrentQuestionsAskedValue}
+        inputFieldRef={questionsAskedRef}
+        defaultFieldValue={""}
+      >
+        <TextField
+          label="Questions asked"
+          isRequired={false}
+          isReadOnly={false}
+          value={currentQuestionsAskedValue}
+          onChange={(e) => {
+            let { value } = e.target;
+            if (errors.questionsAsked?.hasError) {
+              runValidationTasks("questionsAsked", value);
+            }
+            setCurrentQuestionsAskedValue(value);
+          }}
+          onBlur={() =>
+            runValidationTasks("questionsAsked", currentQuestionsAskedValue)
+          }
+          errorMessage={errors.questionsAsked?.errorMessage}
+          hasError={errors.questionsAsked?.hasError}
+          ref={questionsAskedRef}
+          labelHidden={true}
+          {...getOverrideProps(overrides, "questionsAsked")}
+        ></TextField>
+      </ArrayField>
+      <TextAreaField
+        label="User answers"
         isRequired={false}
         isReadOnly={false}
+        onChange={(e) => {
+          let { value } = e.target;
+          if (onChange) {
+            const modelFields = {
+              userId,
+              topic,
+              totalQuestions,
+              correctAnswers,
+              score,
+              questionsAsked,
+              userAnswers: value,
+              completedAt,
+              owner,
+            };
+            const result = onChange(modelFields);
+            value = result?.userAnswers ?? value;
+          }
+          if (errors.userAnswers?.hasError) {
+            runValidationTasks("userAnswers", value);
+          }
+          setUserAnswers(value);
+        }}
+        onBlur={() => runValidationTasks("userAnswers", userAnswers)}
+        errorMessage={errors.userAnswers?.errorMessage}
+        hasError={errors.userAnswers?.hasError}
+        {...getOverrideProps(overrides, "userAnswers")}
+      ></TextAreaField>
+      <TextField
+        label="Completed at"
+        isRequired={true}
+        isReadOnly={false}
         type="datetime-local"
-        value={updatedAt && convertToLocal(new Date(updatedAt))}
+        value={completedAt && convertToLocal(new Date(completedAt))}
         onChange={(e) => {
           let value =
             e.target.value === "" ? "" : new Date(e.target.value).toISOString();
           if (onChange) {
             const modelFields = {
-              question,
-              choices,
-              answer,
-              explanation,
+              userId,
               topic,
-              createdAt,
-              updatedAt: value,
+              totalQuestions,
+              correctAnswers,
+              score,
+              questionsAsked,
+              userAnswers,
+              completedAt: value,
+              owner,
             };
             const result = onChange(modelFields);
-            value = result?.updatedAt ?? value;
+            value = result?.completedAt ?? value;
           }
-          if (errors.updatedAt?.hasError) {
-            runValidationTasks("updatedAt", value);
+          if (errors.completedAt?.hasError) {
+            runValidationTasks("completedAt", value);
           }
-          setUpdatedAt(value);
+          setCompletedAt(value);
         }}
-        onBlur={() => runValidationTasks("updatedAt", updatedAt)}
-        errorMessage={errors.updatedAt?.errorMessage}
-        hasError={errors.updatedAt?.hasError}
-        {...getOverrideProps(overrides, "updatedAt")}
+        onBlur={() => runValidationTasks("completedAt", completedAt)}
+        errorMessage={errors.completedAt?.errorMessage}
+        hasError={errors.completedAt?.hasError}
+        {...getOverrideProps(overrides, "completedAt")}
+      ></TextField>
+      <TextField
+        label="Owner"
+        isRequired={false}
+        isReadOnly={false}
+        value={owner}
+        onChange={(e) => {
+          let { value } = e.target;
+          if (onChange) {
+            const modelFields = {
+              userId,
+              topic,
+              totalQuestions,
+              correctAnswers,
+              score,
+              questionsAsked,
+              userAnswers,
+              completedAt,
+              owner: value,
+            };
+            const result = onChange(modelFields);
+            value = result?.owner ?? value;
+          }
+          if (errors.owner?.hasError) {
+            runValidationTasks("owner", value);
+          }
+          setOwner(value);
+        }}
+        onBlur={() => runValidationTasks("owner", owner)}
+        errorMessage={errors.owner?.errorMessage}
+        hasError={errors.owner?.hasError}
+        {...getOverrideProps(overrides, "owner")}
       ></TextField>
       <Flex
         justifyContent="space-between"

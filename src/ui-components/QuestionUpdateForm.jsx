@@ -194,6 +194,7 @@ export default function QuestionUpdateForm(props) {
     question: "",
     choices: [],
     answer: "",
+    explanation: "",
     topic: "",
     createdAt: "",
     updatedAt: "",
@@ -201,6 +202,9 @@ export default function QuestionUpdateForm(props) {
   const [question, setQuestion] = React.useState(initialValues.question);
   const [choices, setChoices] = React.useState(initialValues.choices);
   const [answer, setAnswer] = React.useState(initialValues.answer);
+  const [explanation, setExplanation] = React.useState(
+    initialValues.explanation
+  );
   const [topic, setTopic] = React.useState(initialValues.topic);
   const [createdAt, setCreatedAt] = React.useState(initialValues.createdAt);
   const [updatedAt, setUpdatedAt] = React.useState(initialValues.updatedAt);
@@ -213,6 +217,7 @@ export default function QuestionUpdateForm(props) {
     setChoices(cleanValues.choices ?? []);
     setCurrentChoicesValue("");
     setAnswer(cleanValues.answer);
+    setExplanation(cleanValues.explanation);
     setTopic(cleanValues.topic);
     setCreatedAt(cleanValues.createdAt);
     setUpdatedAt(cleanValues.updatedAt);
@@ -239,7 +244,8 @@ export default function QuestionUpdateForm(props) {
   const validations = {
     question: [{ type: "Required" }],
     choices: [{ type: "Required" }],
-    answer: [],
+    answer: [{ type: "Required" }],
+    explanation: [],
     topic: [],
     createdAt: [],
     updatedAt: [],
@@ -289,7 +295,8 @@ export default function QuestionUpdateForm(props) {
         let modelFields = {
           question,
           choices,
-          answer: answer ?? null,
+          answer,
+          explanation: explanation ?? null,
           topic: topic ?? null,
           createdAt: createdAt ?? null,
           updatedAt: updatedAt ?? null,
@@ -356,6 +363,7 @@ export default function QuestionUpdateForm(props) {
               question: value,
               choices,
               answer,
+              explanation,
               topic,
               createdAt,
               updatedAt,
@@ -381,6 +389,7 @@ export default function QuestionUpdateForm(props) {
               question,
               choices: values,
               answer,
+              explanation,
               topic,
               createdAt,
               updatedAt,
@@ -425,7 +434,7 @@ export default function QuestionUpdateForm(props) {
       </ArrayField>
       <TextField
         label="Answer"
-        isRequired={false}
+        isRequired={true}
         isReadOnly={false}
         value={answer}
         onChange={(e) => {
@@ -435,6 +444,7 @@ export default function QuestionUpdateForm(props) {
               question,
               choices,
               answer: value,
+              explanation,
               topic,
               createdAt,
               updatedAt,
@@ -453,6 +463,36 @@ export default function QuestionUpdateForm(props) {
         {...getOverrideProps(overrides, "answer")}
       ></TextField>
       <TextField
+        label="Explanation"
+        isRequired={false}
+        isReadOnly={false}
+        value={explanation}
+        onChange={(e) => {
+          let { value } = e.target;
+          if (onChange) {
+            const modelFields = {
+              question,
+              choices,
+              answer,
+              explanation: value,
+              topic,
+              createdAt,
+              updatedAt,
+            };
+            const result = onChange(modelFields);
+            value = result?.explanation ?? value;
+          }
+          if (errors.explanation?.hasError) {
+            runValidationTasks("explanation", value);
+          }
+          setExplanation(value);
+        }}
+        onBlur={() => runValidationTasks("explanation", explanation)}
+        errorMessage={errors.explanation?.errorMessage}
+        hasError={errors.explanation?.hasError}
+        {...getOverrideProps(overrides, "explanation")}
+      ></TextField>
+      <TextField
         label="Topic"
         isRequired={false}
         isReadOnly={false}
@@ -464,6 +504,7 @@ export default function QuestionUpdateForm(props) {
               question,
               choices,
               answer,
+              explanation,
               topic: value,
               createdAt,
               updatedAt,
@@ -495,6 +536,7 @@ export default function QuestionUpdateForm(props) {
               question,
               choices,
               answer,
+              explanation,
               topic,
               createdAt: value,
               updatedAt,
@@ -526,6 +568,7 @@ export default function QuestionUpdateForm(props) {
               question,
               choices,
               answer,
+              explanation,
               topic,
               createdAt,
               updatedAt: value,

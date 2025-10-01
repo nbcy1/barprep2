@@ -26,6 +26,7 @@ export declare type QuestionUpdateFormInputValues = {
     question?: string;
     choices?: string[];
     answer?: string;
+    explanation?: string;
     topic?: string;
     createdAt?: string;
     updatedAt?: string;
@@ -34,6 +35,7 @@ export declare type QuestionUpdateFormValidationValues = {
     question?: ValidationFunction<string>;
     choices?: ValidationFunction<string>;
     answer?: ValidationFunction<string>;
+    explanation?: ValidationFunction<string>;
     topic?: ValidationFunction<string>;
     createdAt?: ValidationFunction<string>;
     updatedAt?: ValidationFunction<string>;
@@ -44,6 +46,7 @@ export declare type QuestionUpdateFormOverridesProps = {
     question?: PrimitiveOverrideProps<TextFieldProps>;
     choices?: PrimitiveOverrideProps<TextFieldProps>;
     answer?: PrimitiveOverrideProps<TextFieldProps>;
+    explanation?: PrimitiveOverrideProps<TextFieldProps>;
     topic?: PrimitiveOverrideProps<TextFieldProps>;
     createdAt?: PrimitiveOverrideProps<TextFieldProps>;
     updatedAt?: PrimitiveOverrideProps<TextFieldProps>;
