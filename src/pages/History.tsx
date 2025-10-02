@@ -39,8 +39,8 @@ export default function History() {
         setLoading(true)
         const response = await client.graphql({
           query: `
-            query ListQuizResults($filter: ModelQuizResultFilterInput) {
-              listQuizResults(filter: $filter, limit: 100) {
+            query ListQuizResults {
+              listQuizResults(limit: 100) {
                 items {
                   id
                   topic
@@ -51,12 +51,7 @@ export default function History() {
                 }
               }
             }
-          `,
-          variables: {
-            filter: {
-              userId: { eq: user.username }
-            }
-          }
+          `
         })
         
         const results = response.data.listQuizResults.items
@@ -182,7 +177,6 @@ export default function History() {
     <div style={{ padding: "2rem", maxWidth: "1200px", margin: "0 auto" }}>
       <h1>Quiz History</h1>
 
-      {/* Overall Stats */}
       {overallStats && (
         <div style={{ 
           display: "grid", 
@@ -227,7 +221,6 @@ export default function History() {
         </div>
       )}
 
-      {/* Performance by Topic */}
       <div style={{ marginBottom: "3rem" }}>
         <h2>Performance by Topic</h2>
         <div style={{ backgroundColor: "white", borderRadius: "8px", overflow: "hidden", border: "1px solid #ddd" }}>
@@ -264,7 +257,6 @@ export default function History() {
         </div>
       </div>
 
-      {/* Recent Quiz Results */}
       <div>
         <h2>Recent Quizzes</h2>
         <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
