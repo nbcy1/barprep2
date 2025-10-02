@@ -14,7 +14,7 @@ type Question @model
 
 type QuizResult @model
   @auth(rules: [
-    { allow: owner, ownerField: "userId", identityClaim: "cognito:username" }
+    { allow: owner }
   ]) {
   id: ID!
   userId: String! @index(name: "byUser")
