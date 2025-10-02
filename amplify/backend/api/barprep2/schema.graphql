@@ -1,6 +1,16 @@
-type Question @model
+# schema.graphql
+
+type Question
+  @model
   @auth(rules: [
-    { allow: public, operations: [read, create, update, delete] }
+    # Everyone can read questions
+    { allow: public, operations: [read] },
+
+    # Only you (the admin) can create/update/delete questions
+    { allow: owner, ownerField: "owner", ownerField: "owner", identityClaim: "cognito:username", operations: [create, update, delete] },
+
+    # Optional: if you want to allow adding additional admins by group later
+    { allow: groups, groups: ["Admins"], operations: [create, update, delete] }
   ]) {
   id: ID!
   question: String!
@@ -10,11 +20,14 @@ type Question @model
   topic: String
   createdAt: AWSDateTime
   updatedAt: AWSDateTime
+  owner: String @aws_sub # stores the admin's Cognito username or sub
 }
 
-type QuizResult @model
+type QuizResult
+  @model
   @auth(rules: [
-    { allow: private, provider: userPools }
+    # Each user can access only their own quiz results
+    { allow: owner, ownerField: "owner", identityClaim: "cognito:username" }
   ]) {
   id: ID!
   topic: String!
@@ -24,4 +37,5 @@ type QuizResult @model
   questionsAsked: [String]
   userAnswers: AWSJSON
   completedAt: AWSDateTime!
+  owner: String @aws_sub # stores the user who created the quiz result
 }
