@@ -14,7 +14,7 @@ type Question @model
 
 type QuizResult @model
   @auth(rules: [
-    { allow: owner, operations: [create, read, update, delete] }
+    { allow: owner, ownerField: "userId", identityClaim: "cognito:username", operations: [create, read, update, delete] }
     { allow: private, operations: [read] }
   ]) {
   id: ID!
@@ -26,5 +26,4 @@ type QuizResult @model
   questionsAsked: [String]
   userAnswers: AWSJSON
   completedAt: AWSDateTime!
-  owner: String
 }
