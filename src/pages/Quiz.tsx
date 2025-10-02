@@ -97,7 +97,7 @@ export default function Quiz() {
       setSaving(true);
       const score = (correct / total) * 100;
       
-      await client.graphql({
+      const result = await client.graphql({
         query: `
           mutation CreateQuizResult($input: CreateQuizResultInput!) {
             createQuizResult(input: $input) {
@@ -107,7 +107,6 @@ export default function Quiz() {
         `,
         variables: {
           input: {
-            userId: user.username,
             topic: selectedTopic,
             totalQuestions: total,
             correctAnswers: correct,
@@ -118,8 +117,11 @@ export default function Quiz() {
           },
         },
       });
+      
+      console.log("Quiz result saved successfully:", result);
     } catch (err) {
       console.error("Error saving quiz result:", err);
+      console.error("Full error:", JSON.stringify(err, null, 2));
     } finally {
       setSaving(false);
     }
