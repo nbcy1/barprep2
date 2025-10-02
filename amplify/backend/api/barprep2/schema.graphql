@@ -14,10 +14,10 @@ type Question @model
 
 type QuizResult @model
   @auth(rules: [
-    { allow: owner }
+    { allow: private, provider: userPools }
   ]) {
   id: ID!
-  userId: String! @index(name: "byUser")
+  owner: String @auth(rules: [{ allow: owner, operations: [read, delete] }])
   topic: String!
   totalQuestions: Int!
   correctAnswers: Int!
