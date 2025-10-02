@@ -7,9 +7,9 @@ type Question
     { allow: public, operations: [read] },
 
     # Only you (the admin) can create/update/delete questions
-    { allow: owner, ownerField: "owner", ownerField: "owner", identityClaim: "cognito:username", operations: [create, update, delete] },
+    { allow: owner, ownerField: "owner", identityClaim: "cognito:username", operations: [create, update, delete] },
 
-    # Optional: if you want to allow adding additional admins by group later
+    # Optional: allow future Admins group
     { allow: groups, groups: ["Admins"], operations: [create, update, delete] }
   ]) {
   id: ID!
@@ -20,13 +20,13 @@ type Question
   topic: String
   createdAt: AWSDateTime
   updatedAt: AWSDateTime
-  owner: String @aws_sub # stores the admin's Cognito username or sub
+  owner: String # stores who created the question
 }
 
 type QuizResult
   @model
   @auth(rules: [
-    # Each user can access only their own quiz results
+    # Each user can only access their own quiz results
     { allow: owner, ownerField: "owner", identityClaim: "cognito:username" }
   ]) {
   id: ID!
@@ -37,5 +37,5 @@ type QuizResult
   questionsAsked: [String]
   userAnswers: AWSJSON
   completedAt: AWSDateTime!
-  owner: String @aws_sub # stores the user who created the quiz result
+  owner: String # stores the user who took the quiz
 }
