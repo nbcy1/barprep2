@@ -17,7 +17,6 @@ type QuizResult @model
     { allow: private, provider: userPools }
   ]) {
   id: ID!
-  owner: String @auth(rules: [{ allow: owner, operations: [read, delete] }])
   topic: String!
   totalQuestions: Int!
   correctAnswers: Int!
