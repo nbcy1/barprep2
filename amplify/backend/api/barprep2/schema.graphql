@@ -14,8 +14,7 @@ type Question @model
 
 type QuizResult @model
   @auth(rules: [
-    { allow: owner, ownerField: "userId", identityClaim: "cognito:username", operations: [create, read, update, delete] }
-    { allow: private, operations: [read] }
+    { allow: owner, ownerField: "userId", identityClaim: "cognito:username" }
   ]) {
   id: ID!
   userId: String! @index(name: "byUser")
