@@ -1,10 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { API } from '@aws-amplify/api';
-import { Amplify } from 'aws-amplify';
-import awsExports from '../aws-exports';
-import { listQuestions as listQuestionsQuery } from '../graphql/queries';
-
-Amplify.configure(awsExports);
+import React, { useEffect, useState } from "react";
+import { API, graphqlOperation } from "aws-amplify";
+import { listQuestions } from "../graphql/queries";
 
 interface Question {
   id: string;
@@ -20,31 +16,27 @@ const Questions: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchQuestions = async () => {
+  const fetchQuestions = async () => {
+    try {
       setLoading(true);
       setError(null);
 
-      try {
-        const result: any = await API.graphql({
-          query: listQuestionsQuery,
-          variables: { limit: 100 },
-        });
-
-        // result structure: result.data.listQuestions.items
-        if (result.data?.listQuestions?.items) {
-          setQuestions(result.data.listQuestions.items);
-        } else {
-          setQuestions([]);
-        }
-      } catch (err: any) {
-        console.error('Error fetching questions:', err);
-        setError(err.message || 'Error fetching questions');
-      } finally {
-        setLoading(false);
+      const result: any = await API.graphql(graphqlOperation(listQuestions));
+      if (result?.data?.listQuestions?.items) {
+        setQuestions(result.data.listQuestions.items);
+      } else {
+        setQuestions([]);
       }
-    };
+    } catch (err: any) {
+      console.error("Error fetching questions:", err);
+      setError(err.message || "Unknown error");
+      setQuestions([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchQuestions();
   }, []);
 
@@ -53,23 +45,20 @@ const Questions: React.FC = () => {
   if (questions.length === 0) return <div>No questions found.</div>;
 
   return (
-    <div>
-      <h1>Questions</h1>
-      <ul>
-        {questions.map((q) => (
-          <li key={q.id}>
-            <strong>{q.question}</strong>
-            <ul>
-              {q.choices.map((choice, idx) => (
-                <li key={idx}>{choice}</li>
-              ))}
-            </ul>
-            <p>Answer: {q.answer}</p>
-            {q.explanation && <p>Explanation: {q.explanation}</p>}
-            {q.topic && <p>Topic: {q.topic}</p>}
-          </li>
-        ))}
-      </ul>
+    <div className="questions-page">
+      <h1>Quiz Questions</h1>
+      {questions.map((q) => (
+        <div key={q.id} className="question-card">
+          <h2>{q.question}</h2>
+          <ul>
+            {q.choices.map((choice, index) => (
+              <li key={index}>{choice}</li>
+            ))}
+          </ul>
+          {q.explanation && <p><strong>Explanation:</strong> {q.explanation}</p>}
+          {q.topic && <p><strong>Topic:</strong> {q.topic}</p>}
+        </div>
+      ))}
     </div>
   );
 };
