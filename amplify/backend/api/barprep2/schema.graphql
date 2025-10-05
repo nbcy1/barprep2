@@ -1,8 +1,7 @@
 type Question @model
   @auth(rules: [
-    { allow: public, operations: [read] },                   # Public can read questions
-    { allow: owner, operations: [read, create] },           # Owner (user) can create (if needed)
-    { allow: groups, groups: ["Admin"], operations: [create, update, delete, read] } # Admins full access
+    { allow: public, provider: apiKey, operations: [read] },
+    { allow: private, provider: userPools, operations: [create, update, delete] }
   ]) {
   id: ID!
   question: String!
@@ -10,7 +9,8 @@ type Question @model
   answer: String!
   explanation: String
   topic: String
-  owner: String
+  createdAt: AWSDateTime
+  updatedAt: AWSDateTime
 }
 
 type QuizHistory @model
