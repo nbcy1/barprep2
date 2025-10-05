@@ -1,6 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
 import { generateClient } from "aws-amplify/api";
-import { listQuestions } from "../graphql/queries"; // adjust path if needed
 
 type Question = {
   id: string;
@@ -24,11 +23,25 @@ export default function Questions() {
     const fetchQuestions = async () => {
       try {
         setLoading(true);
-        const res: any = await client.graphql({
-          query: listQuestions,
-          authMode: "API_KEY", // public read access
+        const result = await client.graphql({
+          query: `
+            query ListQuestions {
+              listQuestions {
+                items {
+                  id
+                  question
+                  choices
+                  answer
+                  explanation
+                  topic
+                }
+              }
+            }
+          `,
+          // Use the logged-in user's session
+          authMode: "AMAZON_COGNITO_USER_POOLS",
         });
-        setQuestions(res.data.listQuestions.items || []);
+        setQuestions(result.data.listQuestions.items);
         setError(null);
       } catch (err) {
         console.error("Error fetching questions:", err);
@@ -37,13 +50,12 @@ export default function Questions() {
         setLoading(false);
       }
     };
-
     fetchQuestions();
   }, [client]);
 
   const handleChoiceSelect = (questionId: string, choice: string) => {
     if (answers[questionId]) return;
-    setAnswers(prev => ({ ...prev, [questionId]: choice }));
+    setAnswers((prev) => ({ ...prev, [questionId]: choice }));
   };
 
   const handleSubmit = () => {
@@ -61,14 +73,18 @@ export default function Questions() {
 
   const calculateScore = () => {
     let correct = 0;
-    questions.forEach(q => {
+    questions.forEach((q) => {
       if (answers[q.id] === q.answer) correct++;
     });
     return { correct, total: questions.length };
   };
 
-  if (loading) return <div style={{ padding: "2rem" }}>Loading questions...</div>;
-  if (error) return <div style={{ padding: "2rem", color: "red" }}>Error: {error}</div>;
+  if (loading)
+    return <div style={{ padding: "2rem" }}>Loading questions...</div>;
+  if (error)
+    return (
+      <div style={{ padding: "2rem", color: "red" }}>Error: {error}</div>
+    );
 
   const score = submitted ? calculateScore() : null;
 
@@ -79,11 +95,14 @@ export default function Questions() {
       {submitted && score && (
         <div
           style={{
-            backgroundColor: score.correct === score.total ? "#d4edda" : "#fff3cd",
+            backgroundColor:
+              score.correct === score.total ? "#d4edda" : "#fff3cd",
             padding: "1rem",
             borderRadius: "8px",
             marginBottom: "2rem",
-            border: `2px solid ${score.correct === score.total ? "#28a745" : "#ffc107"}`,
+            border: `2px solid ${
+              score.correct === score.total ? "#28a745" : "#ffc107"
+            }`,
           }}
         >
           <h2>
@@ -125,7 +144,13 @@ export default function Questions() {
                   <h3 style={{ marginBottom: "0.5rem" }}>
                     Question {index + 1}
                     {q.topic && (
-                      <span style={{ color: "#666", fontSize: "0.9rem", fontWeight: "normal" }}>
+                      <span
+                        style={{
+                          color: "#666",
+                          fontSize: "0.9rem",
+                          fontWeight: "normal",
+                        }}
+                      >
                         {" "}
                         - {q.topic}
                       </span>
@@ -135,59 +160,63 @@ export default function Questions() {
                 </div>
 
                 <div>
-                  {q.choices.map((choice, choiceIndex) => {
-                    const isSelected = answers[q.id] === choice;
-                    const isCorrectAnswer = choice === q.answer;
+                  {q.choices &&
+                    q.choices.map((choice, choiceIndex) => {
+                      const isSelected = answers[q.id] === choice;
+                      const isCorrectAnswer = choice === q.answer;
 
-                    let backgroundColor = "white";
-                    let borderColor = "#ccc";
+                      let backgroundColor = "white";
+                      let borderColor = "#ccc";
 
-                    if (hasAnswered) {
-                      if (isCorrectAnswer) {
-                        backgroundColor = "#d4edda";
-                        borderColor = "#28a745";
+                      if (hasAnswered) {
+                        if (isCorrectAnswer) {
+                          backgroundColor = "#d4edda";
+                          borderColor = "#28a745";
+                        } else if (isSelected) {
+                          backgroundColor = "#f8d7da";
+                          borderColor = "#dc3545";
+                        }
                       } else if (isSelected) {
-                        backgroundColor = "#f8d7da";
-                        borderColor = "#dc3545";
+                        backgroundColor = "#e7f3ff";
+                        borderColor = "#007bff";
                       }
-                    } else if (isSelected) {
-                      backgroundColor = "#e7f3ff";
-                      borderColor = "#007bff";
-                    }
 
-                    return (
-                      <div
-                        key={choiceIndex}
-                        onClick={() => handleChoiceSelect(q.id, choice)}
-                        style={{
-                          padding: "1rem",
-                          marginBottom: "0.5rem",
-                          border: `2px solid ${borderColor}`,
-                          borderRadius: "6px",
-                          cursor: hasAnswered ? "default" : "pointer",
-                          backgroundColor,
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "0.75rem",
-                          transition: "all 0.2s",
-                        }}
-                      >
-                        <input
-                          type="radio"
-                          name={`question-${q.id}`}
-                          checked={isSelected}
-                          onChange={() => handleChoiceSelect(q.id, choice)}
-                          disabled={hasAnswered}
-                          style={{ cursor: hasAnswered ? "default" : "pointer" }}
-                        />
-                        <span style={{ flex: 1 }}>
-                          {choice}
-                          {hasAnswered && isCorrectAnswer && " ✓ (Correct Answer)"}
-                          {hasAnswered && isSelected && !isCorrectAnswer && " ✗ (Your Answer)"}
-                        </span>
-                      </div>
-                    );
-                  })}
+                      return (
+                        <div
+                          key={choiceIndex}
+                          onClick={() => handleChoiceSelect(q.id, choice)}
+                          style={{
+                            padding: "1rem",
+                            marginBottom: "0.5rem",
+                            border: `2px solid ${borderColor}`,
+                            borderRadius: "6px",
+                            cursor: hasAnswered ? "default" : "pointer",
+                            backgroundColor,
+                            transition: "all 0.2s",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "0.75rem",
+                          }}
+                        >
+                          <input
+                            type="radio"
+                            name={`question-${q.id}`}
+                            checked={isSelected}
+                            onChange={() => handleChoiceSelect(q.id, choice)}
+                            disabled={hasAnswered}
+                            style={{ cursor: hasAnswered ? "default" : "pointer" }}
+                          />
+                          <span style={{ flex: 1 }}>
+                            {choice}
+                            {hasAnswered && isCorrectAnswer && " ✓ (Correct Answer)"}
+                            {hasAnswered &&
+                              isSelected &&
+                              !isCorrectAnswer &&
+                              " ✗ (Your Answer)"}
+                          </span>
+                        </div>
+                      );
+                    })}
                 </div>
 
                 {hasAnswered && q.explanation && (
@@ -200,7 +229,9 @@ export default function Questions() {
                       borderLeft: `4px solid ${isCorrect ? "#28a745" : "#ffc107"}`,
                     }}
                   >
-                    <strong style={{ display: "block", marginBottom: "0.5rem" }}>Explanation:</strong>
+                    <strong style={{ display: "block", marginBottom: "0.5rem" }}>
+                      Explanation:
+                    </strong>
                     <p style={{ margin: 0 }}>{q.explanation}</p>
                   </div>
                 )}
