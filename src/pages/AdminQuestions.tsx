@@ -1,6 +1,5 @@
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { generateClient } from "aws-amplify/api";
-import { Auth } from "aws-amplify";
 
 type Question = {
   id: string;
@@ -13,105 +12,62 @@ type Question = {
 
 export default function AdminQuestions() {
   const [questions, setQuestions] = useState<Question[]>([]);
-  const [newQuestion, setNewQuestion] = useState({
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
+  const [newQuestion, setNewQuestion] = useState<Partial<Question>>({
     question: "",
     choices: ["", "", "", ""],
     answer: "",
+    topic: "",
     explanation: "",
-    topic: ""
   });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [submitted, setSubmitted] = useState(false);
 
-  // Ensure we use Cognito User Pools for admin actions
-  const client = useMemo(
-    () => generateClient({ authMode: "AMAZON_COGNITO_USER_POOLS" }),
-    []
-  );
+  const client = useMemo(() => generateClient(), []);
 
-  const fetchQuestions = useCallback(async () => {
-    try {
-      setLoading(true);
-      const res: any = await client.graphql({
-        query: `
-          query ListQuestions {
-            listQuestions {
-              items {
-                id
-                question
-                choices
-                answer
-                explanation
-                topic
+  // Fetch questions
+  useEffect(() => {
+    const fetchQuestions = async () => {
+      try {
+        setLoading(true);
+        const result = await client.graphql({
+          query: `
+            query ListQuestions {
+              listQuestions {
+                items {
+                  id
+                  question
+                  choices
+                  answer
+                  explanation
+                  topic
+                }
               }
             }
-          }
-        `,
-        authMode: "API_KEY" // Public read
-      });
-      setQuestions(res.data.listQuestions.items);
-      setError(null);
-    } catch (err) {
-      console.error("Error fetching questions:", err);
-      setError("Failed to load questions");
-    } finally {
-      setLoading(false);
-    }
+          `,
+        });
+        setQuestions(result.data.listQuestions.items);
+        setError(null);
+      } catch (err) {
+        console.error("Error fetching questions:", err);
+        setError("Failed to load questions");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchQuestions();
   }, [client]);
 
-  useEffect(() => {
-    fetchQuestions();
-  }, [fetchQuestions]);
-
-  const handleChoiceChange = (index: number, value: string) => {
-    const updatedChoices = [...newQuestion.choices];
-    updatedChoices[index] = value;
-    setNewQuestion({ ...newQuestion, choices: updatedChoices });
-  };
-
-  const addChoice = () => {
-    setNewQuestion({ ...newQuestion, choices: [...newQuestion.choices, ""] });
-  };
-
-  const removeChoice = (index: number) => {
-    if (newQuestion.choices.length <= 2) {
-      alert("You must have at least 2 choices");
-      return;
-    }
-    const updatedChoices = newQuestion.choices.filter((_, i) => i !== index);
-    setNewQuestion({ ...newQuestion, choices: updatedChoices });
-  };
-
+  // Add new question
   const handleAdd = async () => {
-    if (!newQuestion.question || !newQuestion.answer || !newQuestion.topic) {
-      alert("Please fill in question, answer, and topic");
+    if (!newQuestion.question || !newQuestion.answer) {
+      alert("Question and answer are required");
       return;
     }
-
-    const filledChoices = newQuestion.choices.filter(c => c.trim() !== "");
-    if (filledChoices.length < 2) {
-      alert("Please provide at least 2 choices");
-      return;
-    }
-
-    if (!filledChoices.includes(newQuestion.answer)) {
-      alert("The correct answer must be one of the choices");
-      return;
-    }
-
     try {
-      const input: any = {
-        question: newQuestion.question,
-        choices: filledChoices,
-        answer: newQuestion.answer,
-        topic: newQuestion.topic,
-      };
-
-      if (newQuestion.explanation.trim()) {
-        input.explanation = newQuestion.explanation;
-      }
-
-      await client.graphql({
+      const result = await client.graphql({
         query: `
           mutation CreateQuestion($input: CreateQuestionInput!) {
             createQuestion(input: $input) {
@@ -124,21 +80,54 @@ export default function AdminQuestions() {
             }
           }
         `,
-        variables: { input }
+        variables: { input: newQuestion },
       });
-
-      setNewQuestion({ question: "", choices: ["", "", "", ""], answer: "", explanation: "", topic: "" });
-      fetchQuestions();
-      alert("Question added successfully!");
+      setQuestions([...questions, result.data.createQuestion]);
+      setNewQuestion({
+        question: "",
+        choices: ["", "", "", ""],
+        answer: "",
+        topic: "",
+        explanation: "",
+      });
     } catch (err) {
       console.error("Error adding question:", err);
-      alert("Error adding question. Make sure you are in the admin group.");
+      alert("Failed to add question");
     }
   };
 
+  // Update question
+  const handleUpdate = async () => {
+    if (!editingQuestion) return;
+    try {
+      const result = await client.graphql({
+        query: `
+          mutation UpdateQuestion($input: UpdateQuestionInput!) {
+            updateQuestion(input: $input) {
+              id
+              question
+              choices
+              answer
+              explanation
+              topic
+            }
+          }
+        `,
+        variables: { input: editingQuestion },
+      });
+      setQuestions(
+        questions.map((q) => (q.id === editingQuestion.id ? result.data.updateQuestion : q))
+      );
+      setEditingQuestion(null);
+    } catch (err) {
+      console.error("Error updating question:", err);
+      alert("Failed to update question");
+    }
+  };
+
+  // Delete question
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this question?")) return;
-
     try {
       await client.graphql({
         query: `
@@ -148,101 +137,250 @@ export default function AdminQuestions() {
             }
           }
         `,
-        variables: { input: { id } }
+        variables: { input: { id } },
       });
-      setQuestions(prev => prev.filter(q => q.id !== id));
+      setQuestions(questions.filter((q) => q.id !== id));
     } catch (err) {
       console.error("Error deleting question:", err);
-      alert("Error deleting question. Make sure you are in the admin group.");
+      alert("Failed to delete question");
     }
+  };
+
+  // Handle quiz answer selection
+  const handleChoiceSelect = (questionId: string, choice: string) => {
+    if (answers[questionId]) return;
+    setAnswers((prev) => ({ ...prev, [questionId]: choice }));
+  };
+
+  const handleSubmitQuiz = () => {
+    if (Object.keys(answers).length < questions.length) {
+      alert("Please answer all questions before submitting");
+      return;
+    }
+    setSubmitted(true);
+  };
+
+  const handleResetQuiz = () => {
+    setAnswers({});
+    setSubmitted(false);
+  };
+
+  const calculateScore = () => {
+    let correct = 0;
+    questions.forEach((q) => {
+      if (answers[q.id] === q.answer) correct++;
+    });
+    return { correct, total: questions.length };
   };
 
   if (loading) return <div style={{ padding: "2rem" }}>Loading questions...</div>;
   if (error) return <div style={{ padding: "2rem", color: "red" }}>Error: {error}</div>;
 
+  const score = submitted ? calculateScore() : null;
+
   return (
-    <div style={{ padding: "2rem", maxWidth: "800px", margin: "0 auto" }}>
-      <h1>Admin - Manage Questions</h1>
+    <div style={{ padding: "2rem", maxWidth: "900px", margin: "0 auto" }}>
+      <h1>Admin Questions</h1>
 
-      <div style={{ backgroundColor: "#f5f5f5", padding: "1.5rem", borderRadius: "8px", marginTop: "2rem" }}>
-        <h2>Add New Question</h2>
-        {/* Question Input */}
-        <textarea
-          placeholder="Enter the question"
-          value={newQuestion.question}
-          onChange={e => setNewQuestion({ ...newQuestion, question: e.target.value })}
-          style={{ width: "100%", padding: "0.5rem", minHeight: "80px", marginBottom: "1rem" }}
+      {/* Add / Edit Form */}
+      <div style={{ marginBottom: "2rem", padding: "1rem", border: "1px solid #ccc", borderRadius: "8px" }}>
+        <h2>{editingQuestion ? "Edit Question" : "Add New Question"}</h2>
+        <input
+          type="text"
+          placeholder="Question"
+          value={editingQuestion?.question ?? newQuestion.question}
+          onChange={(e) =>
+            editingQuestion
+              ? setEditingQuestion({ ...editingQuestion, question: e.target.value })
+              : setNewQuestion({ ...newQuestion, question: e.target.value })
+          }
+          style={{ width: "100%", marginBottom: "0.5rem" }}
         />
-
-        {/* Choices */}
-        {newQuestion.choices.map((choice, index) => (
-          <div key={index} style={{ display: "flex", gap: "0.5rem", marginBottom: "0.5rem" }}>
-            <input
-              type="text"
-              placeholder={`Choice ${index + 1}`}
-              value={choice}
-              onChange={e => handleChoiceChange(index, e.target.value)}
-              style={{ flex: 1, padding: "0.5rem" }}
-            />
-            {newQuestion.choices.length > 2 && (
-              <button onClick={() => removeChoice(index)} style={{ padding: "0.5rem", backgroundColor: "#dc3545", color: "white", border: "none", cursor: "pointer" }}>
-                Remove
-              </button>
-            )}
-          </div>
+        {Array.from({ length: 4 }).map((_, i) => (
+          <input
+            key={i}
+            type="text"
+            placeholder={`Choice ${i + 1}`}
+            value={
+              editingQuestion?.choices[i] ??
+              newQuestion.choices?.[i] ??
+              ""
+            }
+            onChange={(e) => {
+              const updatedChoices = editingQuestion
+                ? [...(editingQuestion.choices ?? [])]
+                : [...(newQuestion.choices ?? ["", "", "", ""])];
+              updatedChoices[i] = e.target.value;
+              editingQuestion
+                ? setEditingQuestion({ ...editingQuestion, choices: updatedChoices })
+                : setNewQuestion({ ...newQuestion, choices: updatedChoices });
+            }}
+            style={{ width: "100%", marginBottom: "0.5rem" }}
+          />
         ))}
-        <button onClick={addChoice} style={{ padding: "0.5rem", backgroundColor: "#28a745", color: "white", border: "none", cursor: "pointer" }}>+ Add Choice</button>
-
-        {/* Correct Answer */}
-        <select
-          value={newQuestion.answer}
-          onChange={e => setNewQuestion({ ...newQuestion, answer: e.target.value })}
-          style={{ width: "100%", padding: "0.5rem", marginTop: "1rem", marginBottom: "1rem" }}
-        >
-          <option value="">Select the correct answer</option>
-          {newQuestion.choices.filter(c => c.trim() !== "").map((choice, index) => (
-            <option key={index} value={choice}>{choice}</option>
-          ))}
-        </select>
-
-        {/* Explanation */}
-        <textarea
-          placeholder="Explanation (optional)"
-          value={newQuestion.explanation}
-          onChange={e => setNewQuestion({ ...newQuestion, explanation: e.target.value })}
-          style={{ width: "100%", padding: "0.5rem", minHeight: "80px", marginBottom: "1rem" }}
+        <input
+          type="text"
+          placeholder="Answer"
+          value={editingQuestion?.answer ?? newQuestion.answer}
+          onChange={(e) =>
+            editingQuestion
+              ? setEditingQuestion({ ...editingQuestion, answer: e.target.value })
+              : setNewQuestion({ ...newQuestion, answer: e.target.value })
+          }
+          style={{ width: "100%", marginBottom: "0.5rem" }}
         />
-
-        {/* Topic */}
         <input
           type="text"
           placeholder="Topic"
-          value={newQuestion.topic}
-          onChange={e => setNewQuestion({ ...newQuestion, topic: e.target.value })}
-          style={{ width: "100%", padding: "0.5rem", marginBottom: "1rem" }}
+          value={editingQuestion?.topic ?? newQuestion.topic}
+          onChange={(e) =>
+            editingQuestion
+              ? setEditingQuestion({ ...editingQuestion, topic: e.target.value })
+              : setNewQuestion({ ...newQuestion, topic: e.target.value })
+          }
+          style={{ width: "100%", marginBottom: "0.5rem" }}
         />
-
-        <button onClick={handleAdd} style={{ padding: "0.75rem 2rem", backgroundColor: "#007bff", color: "white", border: "none", cursor: "pointer" }}>Add Question</button>
+        <input
+          type="text"
+          placeholder="Explanation"
+          value={editingQuestion?.explanation ?? newQuestion.explanation}
+          onChange={(e) =>
+            editingQuestion
+              ? setEditingQuestion({ ...editingQuestion, explanation: e.target.value })
+              : setNewQuestion({ ...newQuestion, explanation: e.target.value })
+          }
+          style={{ width: "100%", marginBottom: "0.5rem" }}
+        />
+        <button
+          onClick={editingQuestion ? handleUpdate : handleAdd}
+          style={{ padding: "0.5rem 1rem", marginRight: "0.5rem" }}
+        >
+          {editingQuestion ? "Update Question" : "Add Question"}
+        </button>
+        {editingQuestion && (
+          <button
+            onClick={() => setEditingQuestion(null)}
+            style={{ padding: "0.5rem 1rem" }}
+          >
+            Cancel
+          </button>
+        )}
       </div>
 
-      {/* Existing Questions */}
-      <div style={{ marginTop: "3rem" }}>
-        <h2>Existing Questions ({questions.length})</h2>
-        {questions.map(q => (
-          <div key={q.id} style={{ padding: "1rem", marginBottom: "1rem", backgroundColor: "white", borderRadius: "8px", border: "1px solid #ccc" }}>
-            <p><strong>{q.question}</strong></p>
-            <p><em>Topic:</em> {q.topic}</p>
-            <ul>
-              {q.choices.map((c, i) => (
-                <li key={i} style={{ color: c === q.answer ? "#28a745" : "black" }}>
-                  {c} {c === q.answer && "(Correct)"}
-                </li>
-              ))}
-            </ul>
-            <button onClick={() => handleDelete(q.id)} style={{ padding: "0.5rem", backgroundColor: "#dc3545", color: "white", border: "none", cursor: "pointer" }}>Delete</button>
+      {/* Question List */}
+      {questions.map((q, index) => {
+        const hasAnswered = !!answers[q.id];
+        const isCorrect = hasAnswered && answers[q.id] === q.answer;
+        const isIncorrect = hasAnswered && answers[q.id] !== q.answer;
+
+        return (
+          <div
+            key={q.id}
+            style={{
+              marginBottom: "2rem",
+              padding: "1.5rem",
+              backgroundColor: "white",
+              border: hasAnswered
+                ? isCorrect
+                  ? "2px solid #28a745"
+                  : "2px solid #dc3545"
+                : "1px solid #ccc",
+              borderRadius: "8px",
+            }}
+          >
+            <div style={{ marginBottom: "1rem" }}>
+              <h3>
+                Question {index + 1}
+                {q.topic && <span style={{ color: "#666", fontSize: "0.9rem" }}> - {q.topic}</span>}
+              </h3>
+              <p style={{ fontSize: "1.1rem" }}>{q.question}</p>
+            </div>
+
+            <div>
+              {q.choices.map((choice, choiceIndex) => {
+                const isSelected = answers[q.id] === choice;
+                const isCorrectAnswer = choice === q.answer;
+                let backgroundColor = "white";
+                let borderColor = "#ccc";
+
+                if (hasAnswered) {
+                  if (isCorrectAnswer) {
+                    backgroundColor = "#d4edda";
+                    borderColor = "#28a745";
+                  } else if (isSelected) {
+                    backgroundColor = "#f8d7da";
+                    borderColor = "#dc3545";
+                  }
+                } else if (isSelected) {
+                  backgroundColor = "#e7f3ff";
+                  borderColor = "#007bff";
+                }
+
+                return (
+                  <button
+                    key={choiceIndex}
+                    disabled={hasAnswered}
+                    onClick={() => handleChoiceSelect(q.id, choice)}
+                    style={{
+                      display: "block",
+                      width: "100%",
+                      padding: "0.5rem",
+                      marginBottom: "0.5rem",
+                      textAlign: "left",
+                      backgroundColor,
+                      border: `1px solid ${borderColor}`,
+                      borderRadius: "4px",
+                      cursor: hasAnswered ? "default" : "pointer",
+                    }}
+                  >
+                    {choice}
+                  </button>
+                );
+              })}
+            </div>
+
+            {hasAnswered && q.explanation && (
+              <div style={{ marginTop: "0.5rem", color: "#555" }}>
+                Explanation: {q.explanation}
+              </div>
+            )}
+
+            {/* Admin actions */}
+            <div style={{ marginTop: "1rem" }}>
+              <button
+                onClick={() => setEditingQuestion(q)}
+                style={{ marginRight: "0.5rem", padding: "0.25rem 0.5rem" }}
+              >
+                Edit
+              </button>
+              <button
+                onClick={() => handleDelete(q.id)}
+                style={{ padding: "0.25rem 0.5rem" }}
+              >
+                Delete
+              </button>
+            </div>
           </div>
-        ))}
-      </div>
+        );
+      })}
+
+      {questions.length > 0 && !submitted && (
+        <button
+          onClick={handleSubmitQuiz}
+          style={{ padding: "0.5rem 1rem", marginRight: "0.5rem" }}
+        >
+          Submit Quiz
+        </button>
+      )}
+
+      {submitted && score && (
+        <div style={{ marginTop: "1rem", fontWeight: "bold" }}>
+          You scored {score.correct} out of {score.total}
+          <button onClick={handleResetQuiz} style={{ marginLeft: "1rem", padding: "0.25rem 0.5rem" }}>
+            Reset Quiz
+          </button>
+        </div>
+      )}
     </div>
   );
 }
