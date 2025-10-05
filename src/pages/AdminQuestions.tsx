@@ -1,8 +1,5 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
-// GraphQL client for Amplify
 import { generateClient } from "aws-amplify/api";
-
-// Fix Vite ESM import for Auth
 import * as AmplifyModules from "aws-amplify";
 const { Auth } = AmplifyModules;
 
@@ -16,8 +13,10 @@ export default function AdminQuestions() {
     topic: ""
   });
 
+  // Generate client once
   const client = useMemo(() => generateClient(), []);
 
+  // Fetch questions with Cognito User Pools auth
   const fetchQuestions = useCallback(async () => {
     try {
       const res = await client.graphql({
@@ -35,6 +34,7 @@ export default function AdminQuestions() {
             }
           }
         `,
+        authMode: "AMAZON_COGNITO_USER_POOLS", // <-- important
       });
       setQuestions(res.data.listQuestions.items);
     } catch (err) {
@@ -89,7 +89,6 @@ export default function AdminQuestions() {
         answer: newQuestion.answer,
         topic: newQuestion.topic,
       };
-
       if (newQuestion.explanation.trim()) {
         input.explanation = newQuestion.explanation;
       }
@@ -108,6 +107,7 @@ export default function AdminQuestions() {
           }
         `,
         variables: { input },
+        authMode: "AMAZON_COGNITO_USER_POOLS", // <-- important
       });
 
       setNewQuestion({ question: "", choices: ["", "", "", ""], answer: "", explanation: "", topic: "" });
@@ -132,6 +132,7 @@ export default function AdminQuestions() {
           }
         `,
         variables: { input: { id } },
+        authMode: "AMAZON_COGNITO_USER_POOLS", // <-- important
       });
       setQuestions(prev => prev.filter(q => q.id !== id));
     } catch (err) {
@@ -200,9 +201,7 @@ export default function AdminQuestions() {
           >
             <option value="">Select the correct answer</option>
             {newQuestion.choices.filter(c => c.trim() !== "").map((choice, index) => (
-              <option key={index} value={choice}>
-                {choice}
-              </option>
+              <option key={index} value={choice}>{choice}</option>
             ))}
           </select>
         </div>
@@ -278,4 +277,3 @@ export default function AdminQuestions() {
     </div>
   );
 }
-
