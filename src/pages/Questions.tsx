@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { generateClient } from "aws-amplify/api";
+import { listQuestions } from "../graphql/queries"; // adjust path if needed
 
 type Question = {
   id: string;
@@ -23,23 +24,11 @@ export default function Questions() {
     const fetchQuestions = async () => {
       try {
         setLoading(true);
-        const result = await client.graphql({
-          query: `
-            query ListQuestions {
-              listQuestions {
-                items {
-                  id
-                  question
-                  choices
-                  answer
-                  explanation
-                  topic
-                }
-              }
-            }
-          `,
+        const res: any = await client.graphql({
+          query: listQuestions,
+          authMode: "API_KEY", // public read access
         });
-        setQuestions(result.data.listQuestions.items);
+        setQuestions(res.data.listQuestions.items || []);
         setError(null);
       } catch (err) {
         console.error("Error fetching questions:", err);
@@ -48,12 +37,13 @@ export default function Questions() {
         setLoading(false);
       }
     };
+
     fetchQuestions();
   }, [client]);
 
   const handleChoiceSelect = (questionId: string, choice: string) => {
     if (answers[questionId]) return;
-    setAnswers((prev) => ({ ...prev, [questionId]: choice }));
+    setAnswers(prev => ({ ...prev, [questionId]: choice }));
   };
 
   const handleSubmit = () => {
@@ -72,9 +62,7 @@ export default function Questions() {
   const calculateScore = () => {
     let correct = 0;
     questions.forEach(q => {
-      if (answers[q.id] === q.answer) {
-        correct++;
-      }
+      if (answers[q.id] === q.answer) correct++;
     });
     return { correct, total: questions.length };
   };
@@ -87,19 +75,23 @@ export default function Questions() {
   return (
     <div style={{ padding: "2rem", maxWidth: "900px", margin: "0 auto" }}>
       <h1>Bar Prep Questions</h1>
-      
+
       {submitted && score && (
-        <div style={{ 
-          backgroundColor: score.correct === score.total ? "#d4edda" : "#fff3cd", 
-          padding: "1rem", 
-          borderRadius: "8px", 
-          marginBottom: "2rem",
-          border: `2px solid ${score.correct === score.total ? "#28a745" : "#ffc107"}`
-        }}>
-          <h2>Your Score: {score.correct} / {score.total}</h2>
+        <div
+          style={{
+            backgroundColor: score.correct === score.total ? "#d4edda" : "#fff3cd",
+            padding: "1rem",
+            borderRadius: "8px",
+            marginBottom: "2rem",
+            border: `2px solid ${score.correct === score.total ? "#28a745" : "#ffc107"}`,
+          }}
+        >
+          <h2>
+            Your Score: {score.correct} / {score.total}
+          </h2>
           <p>
-            {score.correct === score.total 
-              ? "Perfect score! Excellent work!" 
+            {score.correct === score.total
+              ? "Perfect score! Excellent work!"
               : `You got ${Math.round((score.correct / score.total) * 100)}% correct.`}
           </p>
         </div>
@@ -117,33 +109,39 @@ export default function Questions() {
             return (
               <div
                 key={q.id}
-                style={{ 
-                  marginBottom: "2rem", 
+                style={{
+                  marginBottom: "2rem",
                   padding: "1.5rem",
                   backgroundColor: "white",
                   border: hasAnswered
-                    ? isCorrect ? "2px solid #28a745" : "2px solid #dc3545"
+                    ? isCorrect
+                      ? "2px solid #28a745"
+                      : "2px solid #dc3545"
                     : "1px solid #ccc",
-                  borderRadius: "8px"
+                  borderRadius: "8px",
                 }}
               >
                 <div style={{ marginBottom: "1rem" }}>
                   <h3 style={{ marginBottom: "0.5rem" }}>
                     Question {index + 1}
-                    {q.topic && <span style={{ color: "#666", fontSize: "0.9rem", fontWeight: "normal" }}> - {q.topic}</span>}
+                    {q.topic && (
+                      <span style={{ color: "#666", fontSize: "0.9rem", fontWeight: "normal" }}>
+                        {" "}
+                        - {q.topic}
+                      </span>
+                    )}
                   </h3>
                   <p style={{ fontSize: "1.1rem" }}>{q.question}</p>
                 </div>
 
                 <div>
-                  {q.choices && q.choices.map((choice, choiceIndex) => {
+                  {q.choices.map((choice, choiceIndex) => {
                     const isSelected = answers[q.id] === choice;
                     const isCorrectAnswer = choice === q.answer;
-                    const hasAnswered = !!answers[q.id];
-                    
+
                     let backgroundColor = "white";
                     let borderColor = "#ccc";
-                    
+
                     if (hasAnswered) {
                       if (isCorrectAnswer) {
                         backgroundColor = "#d4edda";
@@ -168,10 +166,10 @@ export default function Questions() {
                           borderRadius: "6px",
                           cursor: hasAnswered ? "default" : "pointer",
                           backgroundColor,
-                          transition: "all 0.2s",
                           display: "flex",
                           alignItems: "center",
-                          gap: "0.75rem"
+                          gap: "0.75rem",
+                          transition: "all 0.2s",
                         }}
                       >
                         <input
@@ -193,16 +191,16 @@ export default function Questions() {
                 </div>
 
                 {hasAnswered && q.explanation && (
-                  <div style={{ 
-                    marginTop: "1rem", 
-                    padding: "1rem", 
-                    backgroundColor: isCorrect ? "#d4edda" : "#fff3cd",
-                    borderRadius: "4px",
-                    borderLeft: `4px solid ${isCorrect ? "#28a745" : "#ffc107"}`
-                  }}>
-                    <strong style={{ display: "block", marginBottom: "0.5rem" }}>
-                      Explanation:
-                    </strong>
+                  <div
+                    style={{
+                      marginTop: "1rem",
+                      padding: "1rem",
+                      backgroundColor: isCorrect ? "#d4edda" : "#fff3cd",
+                      borderRadius: "4px",
+                      borderLeft: `4px solid ${isCorrect ? "#28a745" : "#ffc107"}`,
+                    }}
+                  >
+                    <strong style={{ display: "block", marginBottom: "0.5rem" }}>Explanation:</strong>
                     <p style={{ margin: 0 }}>{q.explanation}</p>
                   </div>
                 )}
@@ -214,14 +212,14 @@ export default function Questions() {
             {!submitted ? (
               <button
                 onClick={handleSubmit}
-                style={{ 
-                  padding: "0.75rem 2rem", 
+                style={{
+                  padding: "0.75rem 2rem",
                   fontSize: "1rem",
                   backgroundColor: "#007bff",
                   color: "white",
                   border: "none",
                   borderRadius: "6px",
-                  cursor: "pointer"
+                  cursor: "pointer",
                 }}
               >
                 Submit Answers
@@ -229,14 +227,14 @@ export default function Questions() {
             ) : (
               <button
                 onClick={handleReset}
-                style={{ 
-                  padding: "0.75rem 2rem", 
+                style={{
+                  padding: "0.75rem 2rem",
                   fontSize: "1rem",
                   backgroundColor: "#6c757d",
                   color: "white",
                   border: "none",
                   borderRadius: "6px",
-                  cursor: "pointer"
+                  cursor: "pointer",
                 }}
               >
                 Try Again
