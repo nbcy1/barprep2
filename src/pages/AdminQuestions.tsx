@@ -1,37 +1,36 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { generateClient } from "aws-amplify/api";
+import { listQuestions } from "../graphql/queries"; // path may vary
+import { createQuestion as createQuestionMutation, deleteQuestion as deleteQuestionMutation } from "../graphql/mutations";
+
+type QuestionType = {
+  id: string;
+  question: string;
+  choices: string[];
+  answer: string;
+  explanation?: string;
+  topic: string;
+};
 
 export default function AdminQuestions() {
-  const [questions, setQuestions] = useState<any[]>([]);
-  const [newQuestion, setNewQuestion] = useState({
+  const [questions, setQuestions] = useState<QuestionType[]>([]);
+  const [newQuestion, setNewQuestion] = useState<Omit<QuestionType, "id">>({
     question: "",
     choices: ["", "", "", ""],
     answer: "",
     explanation: "",
-    topic: ""
+    topic: "",
   });
 
   const client = useMemo(() => generateClient(), []);
 
   const fetchQuestions = useCallback(async () => {
     try {
-      const res = await client.graphql({
-        query: `
-          query ListQuestions {
-            listQuestions {
-              items {
-                id
-                question
-                choices
-                answer
-                explanation
-                topic
-              }
-            }
-          }
-        `,
+      const res: any = await client.graphql({
+        query: listQuestions,
+        authMode: "API_KEY",
       });
-      setQuestions(res.data.listQuestions.items);
+      setQuestions(res.data.listQuestions.items || []);
     } catch (err) {
       console.error("Error fetching questions:", err);
     }
@@ -85,26 +84,13 @@ export default function AdminQuestions() {
         topic: newQuestion.topic,
       };
 
-      if (newQuestion.explanation.trim()) {
-        input.explanation = newQuestion.explanation;
-      }
+      if (newQuestion.explanation.trim()) input.explanation = newQuestion.explanation;
 
       await client.graphql({
-        query: `
-          mutation CreateQuestion($input: CreateQuestionInput!) {
-            createQuestion(input: $input) {
-              id
-              question
-              choices
-              answer
-              explanation
-              topic
-            }
-          }
-        `,
+        query: createQuestionMutation,
         variables: { input },
       });
-      
+
       setNewQuestion({ question: "", choices: ["", "", "", ""], answer: "", explanation: "", topic: "" });
       fetchQuestions();
       alert("Question added successfully!");
@@ -116,16 +102,10 @@ export default function AdminQuestions() {
 
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this question?")) return;
-    
+
     try {
       await client.graphql({
-        query: `
-          mutation DeleteQuestion($input: DeleteQuestionInput!) {
-            deleteQuestion(input: $input) {
-              id
-            }
-          }
-        `,
+        query: deleteQuestionMutation,
         variables: { input: { id } },
       });
       setQuestions(prev => prev.filter(q => q.id !== id));
@@ -137,10 +117,10 @@ export default function AdminQuestions() {
   return (
     <div style={{ padding: "2rem", maxWidth: "800px", margin: "0 auto" }}>
       <h1>Admin - Manage Questions</h1>
-      
+
       <div style={{ backgroundColor: "#f5f5f5", padding: "1.5rem", borderRadius: "8px", marginTop: "2rem" }}>
         <h2>Add New Question</h2>
-        
+
         <div style={{ marginBottom: "1rem" }}>
           <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "bold" }}>
             Question: <span style={{ color: "red" }}>*</span>
@@ -167,7 +147,7 @@ export default function AdminQuestions() {
                 style={{ flex: 1, padding: "0.5rem" }}
               />
               {newQuestion.choices.length > 2 && (
-                <button 
+                <button
                   onClick={() => removeChoice(index)}
                   style={{ padding: "0.5rem 1rem", backgroundColor: "#dc3545", color: "white", border: "none", cursor: "pointer", borderRadius: "4px" }}
                 >
@@ -176,7 +156,7 @@ export default function AdminQuestions() {
               )}
             </div>
           ))}
-          <button 
+          <button
             onClick={addChoice}
             style={{ padding: "0.5rem 1rem", marginTop: "0.5rem", backgroundColor: "#28a745", color: "white", border: "none", cursor: "pointer", borderRadius: "4px" }}
           >
@@ -194,13 +174,11 @@ export default function AdminQuestions() {
             style={{ width: "100%", padding: "0.5rem" }}
           >
             <option value="">Select the correct answer</option>
-            {newQuestion.choices
-              .filter(c => c.trim() !== "")
-              .map((choice, index) => (
-                <option key={index} value={choice}>
-                  {choice}
-                </option>
-              ))}
+            {newQuestion.choices.filter(c => c.trim() !== "").map((choice, index) => (
+              <option key={index} value={choice}>
+                {choice}
+              </option>
+            ))}
           </select>
         </div>
 
@@ -229,7 +207,7 @@ export default function AdminQuestions() {
           />
         </div>
 
-        <button 
+        <button
           onClick={handleAdd}
           style={{ padding: "0.75rem 2rem", backgroundColor: "#007bff", color: "white", border: "none", cursor: "pointer", fontSize: "1rem", borderRadius: "6px" }}
         >
@@ -244,23 +222,13 @@ export default function AdminQuestions() {
         ) : (
           questions.map(q => (
             <div key={q.id} style={{ backgroundColor: "white", padding: "1.5rem", marginBottom: "1rem", border: "1px solid #ddd", borderRadius: "8px" }}>
-              <p style={{ fontWeight: "bold", fontSize: "1.1rem", marginBottom: "0.5rem" }}>
-                {q.question}
-              </p>
-              <p style={{ color: "#666", marginBottom: "0.5rem" }}>
-                <strong>Topic:</strong> {q.topic}
-              </p>
+              <p style={{ fontWeight: "bold", fontSize: "1.1rem", marginBottom: "0.5rem" }}>{q.question}</p>
+              <p style={{ color: "#666", marginBottom: "0.5rem" }}><strong>Topic:</strong> {q.topic}</p>
               <div style={{ marginBottom: "0.5rem" }}>
                 <strong>Choices:</strong>
                 <ul style={{ marginTop: "0.25rem", marginLeft: "1.5rem" }}>
                   {q.choices?.map((choice: string, idx: number) => (
-                    <li 
-                      key={idx}
-                      style={{ 
-                        color: choice === q.answer ? "#28a745" : "black",
-                        fontWeight: choice === q.answer ? "bold" : "normal"
-                      }}
-                    >
+                    <li key={idx} style={{ color: choice === q.answer ? "#28a745" : "black", fontWeight: choice === q.answer ? "bold" : "normal" }}>
                       {choice} {choice === q.answer && "✓ (Correct)"}
                     </li>
                   ))}
@@ -272,8 +240,8 @@ export default function AdminQuestions() {
                   <p style={{ margin: "0.5rem 0 0 0" }}>{q.explanation}</p>
                 </div>
               )}
-              <button 
-                onClick={() => handleDelete(q.id)} 
+              <button
+                onClick={() => handleDelete(q.id)}
                 style={{ padding: "0.5rem 1rem", backgroundColor: "#dc3545", color: "white", border: "none", cursor: "pointer", marginTop: "1rem", borderRadius: "4px" }}
               >
                 Delete Question
