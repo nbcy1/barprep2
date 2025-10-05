@@ -1,7 +1,8 @@
 type Question @model
   @auth(rules: [
-    { allow: public, provider: apiKey, operations: [read] },
-    { allow: groups, groups: ["admin"], provider: userPools, operations: [create, update, delete] }
+    { allow: public, operations: [read] },                   # Public can read questions
+    { allow: owner, operations: [read, create] },           # Owner (user) can create (if needed)
+    { allow: groups, groups: ["Admin"], operations: [create, update, delete, read] } # Admins full access
   ]) {
   id: ID!
   question: String!
@@ -9,21 +10,18 @@ type Question @model
   answer: String!
   explanation: String
   topic: String
-  createdAt: AWSDateTime
-  updatedAt: AWSDateTime
+  owner: String
 }
 
-type QuizResult @model
+type QuizHistory @model
   @auth(rules: [
-    { allow: owner, ownerField: "owner", provider: userPools, operations: [create, read] }
+    { allow: owner, operations: [create, read] },           # Logged-in users save/view their own quizzes
+    { allow: groups, groups: ["Admin"], operations: [create, read, update, delete] } # Admins full access
   ]) {
   id: ID!
-  topic: String!
-  totalQuestions: Int!
-  correctAnswers: Int!
-  score: Float!
-  questionsAsked: [String]
-  userAnswers: AWSJSON
-  completedAt: AWSDateTime!
-  owner: String
+  userId: String!
+  score: Int
+  total: Int
+  answers: AWSJSON
+  createdAt: AWSDateTime
 }
