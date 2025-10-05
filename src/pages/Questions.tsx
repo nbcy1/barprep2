@@ -1,6 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { API } from 'aws-amplify';
-import { listQuestions } from '../graphql/queries'; // make sure this path matches your generated queries
+import { API } from '@aws-amplify/api';
+import { Amplify } from 'aws-amplify';
+import awsExports from '../aws-exports';
+import { listQuestions as listQuestionsQuery } from '../graphql/queries';
+
+Amplify.configure(awsExports);
 
 interface Question {
   id: string;
@@ -23,15 +27,16 @@ const Questions: React.FC = () => {
 
       try {
         const result: any = await API.graphql({
-          query: listQuestions,
-          variables: { limit: 100 }, // optional limit
+          query: listQuestionsQuery,
+          variables: { limit: 100 },
         });
 
-        // Safely handle null items
-        const items: Question[] =
-          result?.data?.listQuestions?.items ?? [];
-
-        setQuestions(items);
+        // result structure: result.data.listQuestions.items
+        if (result.data?.listQuestions?.items) {
+          setQuestions(result.data.listQuestions.items);
+        } else {
+          setQuestions([]);
+        }
       } catch (err: any) {
         console.error('Error fetching questions:', err);
         setError(err.message || 'Error fetching questions');
@@ -43,9 +48,9 @@ const Questions: React.FC = () => {
     fetchQuestions();
   }, []);
 
-  if (loading) return <p>Loading questions...</p>;
-  if (error) return <p style={{ color: 'red' }}>Error: {error}</p>;
-  if (questions.length === 0) return <p>No questions available.</p>;
+  if (loading) return <div>Loading questions...</div>;
+  if (error) return <div>Error: {error}</div>;
+  if (questions.length === 0) return <div>No questions found.</div>;
 
   return (
     <div>
@@ -59,7 +64,7 @@ const Questions: React.FC = () => {
                 <li key={idx}>{choice}</li>
               ))}
             </ul>
-            <p><em>Answer: {q.answer}</em></p>
+            <p>Answer: {q.answer}</p>
             {q.explanation && <p>Explanation: {q.explanation}</p>}
             {q.topic && <p>Topic: {q.topic}</p>}
           </li>
@@ -70,4 +75,3 @@ const Questions: React.FC = () => {
 };
 
 export default Questions;
-
