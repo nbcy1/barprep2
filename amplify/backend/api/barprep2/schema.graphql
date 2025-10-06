@@ -1,7 +1,7 @@
 type Question @model
   @auth(rules: [
     { allow: public, provider: apiKey, operations: [read] },
-    { allow: private, provider: userPools, operations: [create, update, delete] }
+    { allow: groups, groups: ["Admins"], operations: [create, update, delete] }
   ]) {
   id: ID!
   question: String!
@@ -15,8 +15,8 @@ type Question @model
 
 type QuizHistory @model
   @auth(rules: [
-    { allow: owner, operations: [create, read] },           # Logged-in users save/view their own quizzes
-    { allow: groups, groups: ["Admin"], operations: [create, read, update, delete] } # Admins full access
+    { allow: owner, operations: [create, read] },
+    { allow: groups, groups: ["Admins"], operations: [create, read, update, delete] }
   ]) {
   id: ID!
   userId: String!
