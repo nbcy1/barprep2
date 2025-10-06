@@ -1,72 +1,98 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { generateClient } from "aws-amplify/api";
 
-type Question = {
-  id: string;
-  question: string;
-  choices: string[];
-  answer: string;
-  explanation?: string;
-  topic?: string;
-};
-
 export default function AdminQuestions() {
-  const [questions, setQuestions] = useState<Question[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
-  const [newQuestion, setNewQuestion] = useState<Partial<Question>>({
+  const [questions, setQuestions] = useState<any[]>([]);
+  const [newQuestion, setNewQuestion] = useState({
     question: "",
     choices: ["", "", "", ""],
     answer: "",
-    topic: "",
     explanation: "",
+    topic: ""
   });
-  const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [submitted, setSubmitted] = useState(false);
 
   const client = useMemo(() => generateClient(), []);
 
-  // Fetch questions
-  useEffect(() => {
-    const fetchQuestions = async () => {
-      try {
-        setLoading(true);
-        const result = await client.graphql({
-          query: `
-            query ListQuestions {
-              listQuestions {
-                items {
-                  id
-                  question
-                  choices
-                  answer
-                  explanation
-                  topic
-                }
+  const fetchQuestions = useCallback(async () => {
+    try {
+      const res = await client.graphql({
+        query: `
+          query ListQuestions {
+            listQuestions {
+              items {
+                id
+                question
+                choices
+                answer
+                explanation
+                topic
               }
             }
-          `,
-        });
-        setQuestions(result.data.listQuestions.items);
-        setError(null);
-      } catch (err) {
-        console.error("Error fetching questions:", err);
-        setError("Failed to load questions");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchQuestions();
+          }
+        `,
+      });
+      console.log("Fetch result:", res);
+      setQuestions(res.data.listQuestions.items || []);
+    } catch (err) {
+      console.error("Error fetching questions:", err);
+      console.error("Full error details:", JSON.stringify(err, null, 2));
+    }
   }, [client]);
 
-  // Add new question
-  const handleAdd = async () => {
-    if (!newQuestion.question || !newQuestion.answer) {
-      alert("Question and answer are required");
+  useEffect(() => {
+    fetchQuestions();
+  }, [fetchQuestions]);
+
+  const handleChoiceChange = (index: number, value: string) => {
+    const updatedChoices = [...newQuestion.choices];
+    updatedChoices[index] = value;
+    setNewQuestion({ ...newQuestion, choices: updatedChoices });
+  };
+
+  const addChoice = () => {
+    setNewQuestion({ ...newQuestion, choices: [...newQuestion.choices, ""] });
+  };
+
+  const removeChoice = (index: number) => {
+    if (newQuestion.choices.length <= 2) {
+      alert("You must have at least 2 choices");
       return;
     }
+    const updatedChoices = newQuestion.choices.filter((_, i) => i !== index);
+    setNewQuestion({ ...newQuestion, choices: updatedChoices });
+  };
+
+  const handleAdd = async () => {
+    if (!newQuestion.question || !newQuestion.answer || !newQuestion.topic) {
+      alert("Please fill in question, answer, and topic");
+      return;
+    }
+
+    const filledChoices = newQuestion.choices.filter(c => c.trim() !== "");
+    if (filledChoices.length < 2) {
+      alert("Please provide at least 2 choices");
+      return;
+    }
+
+    if (!filledChoices.includes(newQuestion.answer)) {
+      alert("The correct answer must be one of the choices");
+      return;
+    }
+
     try {
+      const input: any = {
+        question: newQuestion.question,
+        choices: filledChoices,
+        answer: newQuestion.answer,
+        topic: newQuestion.topic,
+      };
+
+      if (newQuestion.explanation.trim()) {
+        input.explanation = newQuestion.explanation;
+      }
+
+      console.log("Creating question with input:", input);
+
       const result = await client.graphql({
         query: `
           mutation CreateQuestion($input: CreateQuestionInput!) {
@@ -80,54 +106,24 @@ export default function AdminQuestions() {
             }
           }
         `,
-        variables: { input: newQuestion },
+        variables: { input },
       });
-      setQuestions([...questions, result.data.createQuestion]);
-      setNewQuestion({
-        question: "",
-        choices: ["", "", "", ""],
-        answer: "",
-        topic: "",
-        explanation: "",
-      });
+      
+      console.log("Question created successfully:", result);
+      
+      setNewQuestion({ question: "", choices: ["", "", "", ""], answer: "", explanation: "", topic: "" });
+      fetchQuestions();
+      alert("Question added successfully!");
     } catch (err) {
       console.error("Error adding question:", err);
-      alert("Failed to add question");
+      console.error("Full error details:", JSON.stringify(err, null, 2));
+      alert("Error adding question - check console for details");
     }
   };
 
-  // Update question
-  const handleUpdate = async () => {
-    if (!editingQuestion) return;
-    try {
-      const result = await client.graphql({
-        query: `
-          mutation UpdateQuestion($input: UpdateQuestionInput!) {
-            updateQuestion(input: $input) {
-              id
-              question
-              choices
-              answer
-              explanation
-              topic
-            }
-          }
-        `,
-        variables: { input: editingQuestion },
-      });
-      setQuestions(
-        questions.map((q) => (q.id === editingQuestion.id ? result.data.updateQuestion : q))
-      );
-      setEditingQuestion(null);
-    } catch (err) {
-      console.error("Error updating question:", err);
-      alert("Failed to update question");
-    }
-  };
-
-  // Delete question
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this question?")) return;
+    
     try {
       await client.graphql({
         query: `
@@ -139,248 +135,161 @@ export default function AdminQuestions() {
         `,
         variables: { input: { id } },
       });
-      setQuestions(questions.filter((q) => q.id !== id));
+      setQuestions(prev => prev.filter(q => q.id !== id));
     } catch (err) {
       console.error("Error deleting question:", err);
-      alert("Failed to delete question");
+      console.error("Full error details:", JSON.stringify(err, null, 2));
     }
   };
-
-  // Handle quiz answer selection
-  const handleChoiceSelect = (questionId: string, choice: string) => {
-    if (answers[questionId]) return;
-    setAnswers((prev) => ({ ...prev, [questionId]: choice }));
-  };
-
-  const handleSubmitQuiz = () => {
-    if (Object.keys(answers).length < questions.length) {
-      alert("Please answer all questions before submitting");
-      return;
-    }
-    setSubmitted(true);
-  };
-
-  const handleResetQuiz = () => {
-    setAnswers({});
-    setSubmitted(false);
-  };
-
-  const calculateScore = () => {
-    let correct = 0;
-    questions.forEach((q) => {
-      if (answers[q.id] === q.answer) correct++;
-    });
-    return { correct, total: questions.length };
-  };
-
-  if (loading) return <div style={{ padding: "2rem" }}>Loading questions...</div>;
-  if (error) return <div style={{ padding: "2rem", color: "red" }}>Error: {error}</div>;
-
-  const score = submitted ? calculateScore() : null;
 
   return (
-    <div style={{ padding: "2rem", maxWidth: "900px", margin: "0 auto" }}>
-      <h1>Admin Questions</h1>
-
-      {/* Add / Edit Form */}
-      <div style={{ marginBottom: "2rem", padding: "1rem", border: "1px solid #ccc", borderRadius: "8px" }}>
-        <h2>{editingQuestion ? "Edit Question" : "Add New Question"}</h2>
-        <input
-          type="text"
-          placeholder="Question"
-          value={editingQuestion?.question ?? newQuestion.question}
-          onChange={(e) =>
-            editingQuestion
-              ? setEditingQuestion({ ...editingQuestion, question: e.target.value })
-              : setNewQuestion({ ...newQuestion, question: e.target.value })
-          }
-          style={{ width: "100%", marginBottom: "0.5rem" }}
-        />
-        {Array.from({ length: 4 }).map((_, i) => (
-          <input
-            key={i}
-            type="text"
-            placeholder={`Choice ${i + 1}`}
-            value={
-              editingQuestion?.choices[i] ??
-              newQuestion.choices?.[i] ??
-              ""
-            }
-            onChange={(e) => {
-              const updatedChoices = editingQuestion
-                ? [...(editingQuestion.choices ?? [])]
-                : [...(newQuestion.choices ?? ["", "", "", ""])];
-              updatedChoices[i] = e.target.value;
-              editingQuestion
-                ? setEditingQuestion({ ...editingQuestion, choices: updatedChoices })
-                : setNewQuestion({ ...newQuestion, choices: updatedChoices });
-            }}
-            style={{ width: "100%", marginBottom: "0.5rem" }}
+    <div style={{ padding: "2rem", maxWidth: "800px", margin: "0 auto" }}>
+      <h1>Admin - Manage Questions</h1>
+      
+      <div style={{ backgroundColor: "#f5f5f5", padding: "1.5rem", borderRadius: "8px", marginTop: "2rem" }}>
+        <h2>Add New Question</h2>
+        
+        <div style={{ marginBottom: "1rem" }}>
+          <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "bold" }}>
+            Question: <span style={{ color: "red" }}>*</span>
+          </label>
+          <textarea
+            placeholder="Enter the question"
+            value={newQuestion.question}
+            onChange={e => setNewQuestion({ ...newQuestion, question: e.target.value })}
+            style={{ width: "100%", padding: "0.5rem", minHeight: "80px" }}
           />
-        ))}
-        <input
-          type="text"
-          placeholder="Answer"
-          value={editingQuestion?.answer ?? newQuestion.answer}
-          onChange={(e) =>
-            editingQuestion
-              ? setEditingQuestion({ ...editingQuestion, answer: e.target.value })
-              : setNewQuestion({ ...newQuestion, answer: e.target.value })
-          }
-          style={{ width: "100%", marginBottom: "0.5rem" }}
-        />
-        <input
-          type="text"
-          placeholder="Topic"
-          value={editingQuestion?.topic ?? newQuestion.topic}
-          onChange={(e) =>
-            editingQuestion
-              ? setEditingQuestion({ ...editingQuestion, topic: e.target.value })
-              : setNewQuestion({ ...newQuestion, topic: e.target.value })
-          }
-          style={{ width: "100%", marginBottom: "0.5rem" }}
-        />
-        <input
-          type="text"
-          placeholder="Explanation"
-          value={editingQuestion?.explanation ?? newQuestion.explanation}
-          onChange={(e) =>
-            editingQuestion
-              ? setEditingQuestion({ ...editingQuestion, explanation: e.target.value })
-              : setNewQuestion({ ...newQuestion, explanation: e.target.value })
-          }
-          style={{ width: "100%", marginBottom: "0.5rem" }}
-        />
-        <button
-          onClick={editingQuestion ? handleUpdate : handleAdd}
-          style={{ padding: "0.5rem 1rem", marginRight: "0.5rem" }}
-        >
-          {editingQuestion ? "Update Question" : "Add Question"}
-        </button>
-        {editingQuestion && (
-          <button
-            onClick={() => setEditingQuestion(null)}
-            style={{ padding: "0.5rem 1rem" }}
+        </div>
+
+        <div style={{ marginBottom: "1rem" }}>
+          <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "bold" }}>
+            Answer Choices: <span style={{ color: "red" }}>*</span>
+          </label>
+          {newQuestion.choices.map((choice, index) => (
+            <div key={index} style={{ display: "flex", gap: "0.5rem", marginBottom: "0.5rem" }}>
+              <input
+                type="text"
+                placeholder={`Choice ${index + 1}`}
+                value={choice}
+                onChange={e => handleChoiceChange(index, e.target.value)}
+                style={{ flex: 1, padding: "0.5rem" }}
+              />
+              {newQuestion.choices.length > 2 && (
+                <button 
+                  onClick={() => removeChoice(index)}
+                  style={{ padding: "0.5rem 1rem", backgroundColor: "#dc3545", color: "white", border: "none", cursor: "pointer", borderRadius: "4px" }}
+                >
+                  Remove
+                </button>
+              )}
+            </div>
+          ))}
+          <button 
+            onClick={addChoice}
+            style={{ padding: "0.5rem 1rem", marginTop: "0.5rem", backgroundColor: "#28a745", color: "white", border: "none", cursor: "pointer", borderRadius: "4px" }}
           >
-            Cancel
-          </button>
-        )}
-      </div>
-
-      {/* Question List */}
-      {questions.map((q, index) => {
-        const hasAnswered = !!answers[q.id];
-        const isCorrect = hasAnswered && answers[q.id] === q.answer;
-        const isIncorrect = hasAnswered && answers[q.id] !== q.answer;
-
-        return (
-          <div
-            key={q.id}
-            style={{
-              marginBottom: "2rem",
-              padding: "1.5rem",
-              backgroundColor: "white",
-              border: hasAnswered
-                ? isCorrect
-                  ? "2px solid #28a745"
-                  : "2px solid #dc3545"
-                : "1px solid #ccc",
-              borderRadius: "8px",
-            }}
-          >
-            <div style={{ marginBottom: "1rem" }}>
-              <h3>
-                Question {index + 1}
-                {q.topic && <span style={{ color: "#666", fontSize: "0.9rem" }}> - {q.topic}</span>}
-              </h3>
-              <p style={{ fontSize: "1.1rem" }}>{q.question}</p>
-            </div>
-
-            <div>
-              {q.choices.map((choice, choiceIndex) => {
-                const isSelected = answers[q.id] === choice;
-                const isCorrectAnswer = choice === q.answer;
-                let backgroundColor = "white";
-                let borderColor = "#ccc";
-
-                if (hasAnswered) {
-                  if (isCorrectAnswer) {
-                    backgroundColor = "#d4edda";
-                    borderColor = "#28a745";
-                  } else if (isSelected) {
-                    backgroundColor = "#f8d7da";
-                    borderColor = "#dc3545";
-                  }
-                } else if (isSelected) {
-                  backgroundColor = "#e7f3ff";
-                  borderColor = "#007bff";
-                }
-
-                return (
-                  <button
-                    key={choiceIndex}
-                    disabled={hasAnswered}
-                    onClick={() => handleChoiceSelect(q.id, choice)}
-                    style={{
-                      display: "block",
-                      width: "100%",
-                      padding: "0.5rem",
-                      marginBottom: "0.5rem",
-                      textAlign: "left",
-                      backgroundColor,
-                      border: `1px solid ${borderColor}`,
-                      borderRadius: "4px",
-                      cursor: hasAnswered ? "default" : "pointer",
-                    }}
-                  >
-                    {choice}
-                  </button>
-                );
-              })}
-            </div>
-
-            {hasAnswered && q.explanation && (
-              <div style={{ marginTop: "0.5rem", color: "#555" }}>
-                Explanation: {q.explanation}
-              </div>
-            )}
-
-            {/* Admin actions */}
-            <div style={{ marginTop: "1rem" }}>
-              <button
-                onClick={() => setEditingQuestion(q)}
-                style={{ marginRight: "0.5rem", padding: "0.25rem 0.5rem" }}
-              >
-                Edit
-              </button>
-              <button
-                onClick={() => handleDelete(q.id)}
-                style={{ padding: "0.25rem 0.5rem" }}
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        );
-      })}
-
-      {questions.length > 0 && !submitted && (
-        <button
-          onClick={handleSubmitQuiz}
-          style={{ padding: "0.5rem 1rem", marginRight: "0.5rem" }}
-        >
-          Submit Quiz
-        </button>
-      )}
-
-      {submitted && score && (
-        <div style={{ marginTop: "1rem", fontWeight: "bold" }}>
-          You scored {score.correct} out of {score.total}
-          <button onClick={handleResetQuiz} style={{ marginLeft: "1rem", padding: "0.25rem 0.5rem" }}>
-            Reset Quiz
+            + Add Another Choice
           </button>
         </div>
-      )}
+
+        <div style={{ marginBottom: "1rem" }}>
+          <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "bold" }}>
+            Correct Answer: <span style={{ color: "red" }}>*</span>
+          </label>
+          <select
+            value={newQuestion.answer}
+            onChange={e => setNewQuestion({ ...newQuestion, answer: e.target.value })}
+            style={{ width: "100%", padding: "0.5rem" }}
+          >
+            <option value="">Select the correct answer</option>
+            {newQuestion.choices
+              .filter(c => c.trim() !== "")
+              .map((choice, index) => (
+                <option key={index} value={choice}>
+                  {choice}
+                </option>
+              ))}
+          </select>
+        </div>
+
+        <div style={{ marginBottom: "1rem" }}>
+          <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "bold" }}>
+            Explanation: <span style={{ color: "#666", fontSize: "0.9rem", fontWeight: "normal" }}>(optional)</span>
+          </label>
+          <textarea
+            placeholder="Explain why this is the correct answer (optional but recommended)"
+            value={newQuestion.explanation}
+            onChange={e => setNewQuestion({ ...newQuestion, explanation: e.target.value })}
+            style={{ width: "100%", padding: "0.5rem", minHeight: "100px" }}
+          />
+        </div>
+
+        <div style={{ marginBottom: "1rem" }}>
+          <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "bold" }}>
+            Topic: <span style={{ color: "red" }}>*</span>
+          </label>
+          <input
+            type="text"
+            placeholder="e.g., Constitutional Law, Contracts"
+            value={newQuestion.topic}
+            onChange={e => setNewQuestion({ ...newQuestion, topic: e.target.value })}
+            style={{ width: "100%", padding: "0.5rem" }}
+          />
+        </div>
+
+        <button 
+          onClick={handleAdd}
+          style={{ padding: "0.75rem 2rem", backgroundColor: "#007bff", color: "white", border: "none", cursor: "pointer", fontSize: "1rem", borderRadius: "6px" }}
+        >
+          Add Question
+        </button>
+      </div>
+
+      <div style={{ marginTop: "3rem" }}>
+        <h2>Existing Questions ({questions.length})</h2>
+        {questions.length === 0 ? (
+          <p>No questions yet.</p>
+        ) : (
+          questions.map(q => (
+            <div key={q.id} style={{ backgroundColor: "white", padding: "1.5rem", marginBottom: "1rem", border: "1px solid #ddd", borderRadius: "8px" }}>
+              <p style={{ fontWeight: "bold", fontSize: "1.1rem", marginBottom: "0.5rem" }}>
+                {q.question}
+              </p>
+              <p style={{ color: "#666", marginBottom: "0.5rem" }}>
+                <strong>Topic:</strong> {q.topic}
+              </p>
+              <div style={{ marginBottom: "0.5rem" }}>
+                <strong>Choices:</strong>
+                <ul style={{ marginTop: "0.25rem", marginLeft: "1.5rem" }}>
+                  {q.choices?.map((choice: string, idx: number) => (
+                    <li 
+                      key={idx}
+                      style={{ 
+                        color: choice === q.answer ? "#28a745" : "black",
+                        fontWeight: choice === q.answer ? "bold" : "normal"
+                      }}
+                    >
+                      {choice} {choice === q.answer && "✓ (Correct)"}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              {q.explanation && (
+                <div style={{ marginTop: "0.75rem", padding: "0.75rem", backgroundColor: "#f8f9fa", borderRadius: "4px", borderLeft: "3px solid #007bff" }}>
+                  <strong>Explanation:</strong>
+                  <p style={{ margin: "0.5rem 0 0 0" }}>{q.explanation}</p>
+                </div>
+              )}
+              <button 
+                onClick={() => handleDelete(q.id)} 
+                style={{ padding: "0.5rem 1rem", backgroundColor: "#dc3545", color: "white", border: "none", cursor: "pointer", marginTop: "1rem", borderRadius: "4px" }}
+              >
+                Delete Question
+              </button>
+            </div>
+          ))
+        )}
+      </div>
     </div>
   );
 }
