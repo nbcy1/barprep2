@@ -38,11 +38,23 @@ export default function Questions() {
             }
           `,
         });
-        setQuestions(result.data.listQuestions.items);
+        
+        // Handle null items and filter out invalid questions
+        const items = result.data?.listQuestions?.items || [];
+        const validQuestions = items.filter((q): q is Question => 
+          q !== null && 
+          typeof q.id === 'string' &&
+          typeof q.question === 'string' &&
+          Array.isArray(q.choices) &&
+          typeof q.answer === 'string'
+        );
+        
+        setQuestions(validQuestions);
         setError(null);
       } catch (err) {
         console.error("Error fetching questions:", err);
-        setError("Failed to load questions");
+        setError("Failed to load questions. Please try again later.");
+        setQuestions([]); // Set empty array on error
       } finally {
         setLoading(false);
       }
