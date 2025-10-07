@@ -4,22 +4,25 @@ import { useAuthenticator } from '@aws-amplify/ui-react';
 export default function Navbar() {
   const { user, signOut } = useAuthenticator((context) => [context.user]);
 
-  // Get user's Cognito groups
-  const groups: string[] = user?.signInUserSession?.accessToken?.payload['cognito:groups'] || [];
-  const isAdmin = groups.includes('Admins');
+  // Safely get user's groups
+  const groups: string[] = user?.signInUserSession?.accessToken?.payload?.['cognito:groups'] || [];
+  const isAdmin = Array.isArray(groups) && groups.includes('Admins');
 
   return (
     <nav style={{ backgroundColor: "#333", padding: "1rem", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
       <ul style={{ listStyle: "none", display: "flex", gap: "2rem", margin: 0, padding: 0 }}>
         <li><Link to="/" style={{ color: "white", textDecoration: "none" }}>Home</Link></li>
+
         {user && (
           <>
             <li><Link to="/dashboard" style={{ color: "white", textDecoration: "none" }}>Dashboard</Link></li>
             <li><Link to="/history" style={{ color: "white", textDecoration: "none" }}>History</Link></li>
           </>
         )}
+
         <li><Link to="/questions" style={{ color: "white", textDecoration: "none" }}>Questions</Link></li>
         <li><Link to="/quiz" style={{ color: "white", textDecoration: "none" }}>Quiz</Link></li>
+
         {user && (
           <>
             <li><Link to="/account" style={{ color: "white", textDecoration: "none" }}>Account</Link></li>
@@ -29,6 +32,7 @@ export default function Navbar() {
           </>
         )}
       </ul>
+
       <div>
         {user ? (
           <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
