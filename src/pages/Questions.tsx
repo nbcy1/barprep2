@@ -82,6 +82,10 @@ export default function Questions() {
   const answeredCount = Object.keys(answers).length;
   const progressPercent = answeredCount ? (sessionCorrect / answeredCount) * 100 : 0;
 
+  // Dynamic color based on percentage
+  const progressColor =
+    progressPercent < 50 ? "#dc3545" : progressPercent < 75 ? "#ffc107" : "#28a745";
+
   return (
     <div style={{
       padding: "1rem",
@@ -96,12 +100,12 @@ export default function Questions() {
         <div style={{
           width: `${progressPercent}%`,
           height: "100%",
-          backgroundColor: "#28a745",
+          backgroundColor: progressColor,
           transition: "width 0.3s"
         }} />
       </div>
-      <div style={{ fontSize: "0.85rem", marginBottom: "1rem" }}>
-        Correct: {sessionCorrect} / {answeredCount} answered
+      <div style={{ fontSize: "0.85rem", marginBottom: "1rem", fontWeight: "bold" }}>
+        Correct: {sessionCorrect} / {answeredCount} ({Math.round(progressPercent)}%)
       </div>
 
       {/* Question Container */}
