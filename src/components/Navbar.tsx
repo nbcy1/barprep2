@@ -4,6 +4,10 @@ import { useAuthenticator } from '@aws-amplify/ui-react';
 export default function Navbar() {
   const { user, signOut } = useAuthenticator((context) => [context.user]);
 
+  // Get user's Cognito groups
+  const groups: string[] = user?.signInUserSession?.accessToken?.payload['cognito:groups'] || [];
+  const isAdmin = groups.includes('Admins');
+
   return (
     <nav style={{ backgroundColor: "#333", padding: "1rem", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
       <ul style={{ listStyle: "none", display: "flex", gap: "2rem", margin: 0, padding: 0 }}>
@@ -19,7 +23,9 @@ export default function Navbar() {
         {user && (
           <>
             <li><Link to="/account" style={{ color: "white", textDecoration: "none" }}>Account</Link></li>
-            <li><Link to="/admin-questions" style={{ color: "white", textDecoration: "none" }}>Admin</Link></li>
+            {isAdmin && (
+              <li><Link to="/admin-questions" style={{ color: "white", textDecoration: "none" }}>Admin</Link></li>
+            )}
           </>
         )}
       </ul>
