@@ -1,12 +1,18 @@
 import { Link } from 'react-router-dom';
 import { useAuthenticator } from '@aws-amplify/ui-react';
+import { useEffect, useState } from 'react';
 
 export default function Navbar() {
   const { user, signOut } = useAuthenticator((context) => [context.user]);
+  const [isAdmin, setIsAdmin] = useState(false);
 
-  // Safely get user's groups
-  const groups: string[] = user?.signInUserSession?.accessToken?.payload?.['cognito:groups'] || [];
-  const isAdmin = Array.isArray(groups) && groups.includes('Admins');
+  useEffect(() => {
+    if (!user) return;
+
+    // Check groups safely
+    const groups: string[] = user?.signInUserSession?.accessToken?.payload?.['cognito:groups'] || [];
+    setIsAdmin(Array.isArray(groups) && groups.includes('Admins'));
+  }, [user]);
 
   return (
     <nav style={{ backgroundColor: "#333", padding: "1rem", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
