@@ -10,15 +10,9 @@ type Question = {
   topic?: string;
 };
 
-type TopicStats = {
-  total: number;
-  correct: number;
-};
-
 export default function Questions() {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [currentAnswer, setCurrentAnswer] = useState<string | null>(null);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [sessionFinished, setSessionFinished] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -46,15 +40,16 @@ export default function Questions() {
             }
           `,
         });
+
         const items = result.data?.listQuestions?.items || [];
-        const validQuestions = items.filter(
-          (q): q is Question =>
-            q &&
-            typeof q.id === "string" &&
-            typeof q.question === "string" &&
-            Array.isArray(q.choices) &&
-            typeof q.answer === "string"
+        const validQuestions = items.filter((q): q is Question =>
+          q !== null &&
+          typeof q.id === 'string' &&
+          typeof q.question === 'string' &&
+          Array.isArray(q.choices) &&
+          typeof q.answer === 'string'
         );
+
         setQuestions(validQuestions);
         setError(null);
       } catch (err) {
@@ -68,63 +63,51 @@ export default function Questions() {
     fetchQuestions();
   }, [client]);
 
-  if (loading) return <div style={{ padding: "2rem" }}>Loading questions...</div>;
-  if (error) return <div style={{ padding: "2rem", color: "red" }}>Error: {error}</div>;
-  if (questions.length === 0) return <div style={{ padding: "2rem" }}>No questions available.</div>;
-
-  const currentQuestion = questions[currentIndex];
-  const isAnswered = currentAnswer !== null;
-
-  const handleChoiceSelect = (choice: string) => {
-    if (isAnswered) return;
-    setCurrentAnswer(choice);
-    setAnswers((prev) => ({ ...prev, [currentQuestion.id]: choice }));
+  const handleChoiceSelect = (questionId: string, choice: string) => {
+    setAnswers((prev) => ({ ...prev, [questionId]: choice }));
   };
 
   const handleNext = () => {
-    setCurrentAnswer(null);
-    if (currentIndex + 1 >= questions.length) {
-      setSessionFinished(true);
-    } else {
+    if (currentIndex < questions.length - 1) {
       setCurrentIndex(currentIndex + 1);
+    } else {
+      setSessionFinished(true);
     }
   };
 
-  const handleExitSession = () => {
+  const handleExit = () => {
     setSessionFinished(true);
   };
 
   const handleNewSession = () => {
-    setCurrentIndex(0);
-    setCurrentAnswer(null);
     setAnswers({});
+    setCurrentIndex(0);
     setSessionFinished(false);
   };
 
   const totalAnswered = Object.keys(answers).length;
-  const totalCorrect = Object.entries(answers).filter(
-    ([id, answer]) => questions.find((q) => q.id === id)?.answer === answer
-  ).length;
+  const totalCorrect = questions.filter(q => answers[q.id] === q.answer).length;
 
+  // Compute topic-wise stats
+  const topicStats: Record<string, { correct: number; total: number }> = {};
+  questions.forEach(q => {
+    if (!topicStats[q.topic || "Other"]) topicStats[q.topic || "Other"] = { correct: 0, total: 0 };
+    if (answers[q.id]) topicStats[q.topic || "Other"].total++;
+    if (answers[q.id] === q.answer) topicStats[q.topic || "Other"].correct++;
+  });
+
+  // Questions answered incorrectly
+  const wrongQuestions = questions.filter(q => answers[q.id] && answers[q.id] !== q.answer);
+
+  // Progress bar color function
   const getColor = (percent: number) => {
     if (percent < 50) return "#dc3545"; // red
     if (percent < 75) return "#ffc107"; // yellow
     return "#28a745"; // green
   };
 
-  const topicStats: Record<string, TopicStats> = {};
-  Object.entries(answers).forEach(([id, answer]) => {
-    const question = questions.find((q) => q.id === id);
-    if (!question) return;
-    const topic = question.topic || "General";
-    if (!topicStats[topic]) topicStats[topic] = { total: 0, correct: 0 };
-    topicStats[topic].total += 1;
-    if (answer === question.answer) topicStats[topic].correct += 1;
-  });
-
-  const wrongQuestions = questions.filter(
-    (q) => answers[q.id] && answers[q.id] !== q.answer
-  );
+  if (loading) return <div style={{ padding: "2rem" }}>Loading questions...</div>;
+  if (error) return <div style={{ padding: "2rem", color: "red" }}>Error: {error}</div>;
 
   if (sessionFinished) {
     return (
@@ -167,9 +150,10 @@ export default function Questions() {
           <>
             <h2>Questions Answered Incorrectly</h2>
             {wrongQuestions.map((q) => (
-              <div key={q.id} style={{ padding: "0.5rem", marginBottom: "0.5rem", backgroundColor: "#f8d7da", borderRadius: "4px" }}>
+              <div key={q.id} style={{ padding: "0.5rem", marginBottom: "0.5rem", borderRadius: "4px", border: "1px solid #ccc", backgroundColor: "white" }}>
                 <p><strong>Q:</strong> {q.question}</p>
                 <p><strong>Your Answer:</strong> {answers[q.id]}</p>
+                <p><strong>Correct Answer:</strong> {q.answer}</p>
                 {q.explanation && <p><strong>Explanation:</strong> {q.explanation}</p>}
               </div>
             ))}
@@ -194,79 +178,115 @@ export default function Questions() {
     );
   }
 
+  const currentQuestion = questions[currentIndex];
+  const userAnswer = answers[currentQuestion.id];
+  const isCorrect = userAnswer === currentQuestion.answer;
+  const showAnswer = !!userAnswer;
+
+  const percentCorrect = totalAnswered ? Math.round((totalCorrect/totalAnswered)*100) : 0;
+
   return (
     <div style={{ padding: "1rem", maxWidth: "800px", margin: "0 auto", fontSize: "0.9rem" }}>
-      {/* Session Stats */}
-      <div style={{ marginBottom: "0.5rem" }}>
+      {/* Progress */}
+      <div style={{ marginBottom: "1rem" }}>
         <p style={{ marginBottom: "0.25rem" }}>Correct: {totalCorrect}/{totalAnswered}</p>
-        <div style={{ backgroundColor: "#eee", borderRadius: "4px", height: "10px", marginBottom: "0.5rem" }}>
-          <div
-            style={{
-              width: totalAnswered ? `${Math.round((totalCorrect/totalAnswered)*100)}%` : "0%",
-              height: "100%",
-              borderRadius: "4px",
-              backgroundColor: getColor(totalAnswered ? Math.round((totalCorrect/totalAnswered)*100) : 0),
-            }}
-          />
+        <div style={{ backgroundColor: "#eee", borderRadius: "4px", height: "10px" }}>
+          <div style={{
+            width: `${percentCorrect}%`,
+            height: "100%",
+            borderRadius: "4px",
+            backgroundColor: getColor(percentCorrect),
+          }} />
         </div>
       </div>
 
-      {/* Scrollable Question/Choices */}
-      <div style={{ maxHeight: "400px", overflowY: "auto", paddingRight: "0.5rem" }}>
-        <p style={{ marginBottom: "0.25rem" }}><strong>Q:</strong> {currentQuestion.question}</p>
+      {/* Question */}
+      <div style={{ padding: "1rem", border: "1px solid #ccc", borderRadius: "8px", marginBottom: "1rem", backgroundColor: "white" }}>
+        <p style={{ fontWeight: "bold" }}>{currentQuestion.question}</p>
         {currentQuestion.choices.map((choice, idx) => {
           let bg = "white";
-          let border = "#ccc";
-          if (isAnswered) {
-            if (choice === currentQuestion.answer) { bg = "#d4edda"; border = "#28a745"; }
-            else if (choice === currentAnswer) { bg = "#f8d7da"; border = "#dc3545"; }
+          let borderColor = "#ccc";
+          if (showAnswer) {
+            if (choice === currentQuestion.answer) {
+              bg = "#d4edda";
+              borderColor = "#28a745";
+            } else if (choice === userAnswer) {
+              bg = "#fff3cd";
+              borderColor = "#ffc107";
+            }
           }
-
           return (
             <div
               key={idx}
-              onClick={() => handleChoiceSelect(choice)}
+              onClick={() => !showAnswer && handleChoiceSelect(currentQuestion.id, choice)}
               style={{
                 padding: "0.5rem",
-                marginBottom: "0.25rem",
-                border: `2px solid ${border}`,
+                marginBottom: "0.5rem",
+                border: `2px solid ${borderColor}`,
                 borderRadius: "4px",
+                cursor: showAnswer ? "default" : "pointer",
                 backgroundColor: bg,
-                cursor: isAnswered ? "default" : "pointer",
                 transition: "all 0.2s",
-                fontSize: "0.85rem"
               }}
             >
-              <input type="radio" checked={currentAnswer === choice} readOnly style={{ marginRight: "0.25rem" }} />
               {choice}
-              {isAnswered && choice === currentQuestion.answer && " ✓"}
-              {isAnswered && choice === currentAnswer && choice !== currentQuestion.answer && " ✗"}
+              {showAnswer && choice === currentQuestion.answer && " ✓"}
+              {showAnswer && choice === userAnswer && choice !== currentQuestion.answer && " ✗"}
             </div>
           );
         })}
-        {isAnswered && currentQuestion.explanation && (
-          <p style={{ marginTop: "0.25rem", backgroundColor: "#fff3cd", padding: "0.25rem", borderRadius: "4px", fontSize: "0.8rem" }}>
-            <strong>Explanation:</strong> {currentQuestion.explanation}
-          </p>
+
+        {showAnswer && currentQuestion.explanation && (
+          <p style={{ marginTop: "0.5rem", fontStyle: "italic" }}>{currentQuestion.explanation}</p>
         )}
       </div>
 
       {/* Buttons */}
-      <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.5rem" }}>
+      <div style={{ display: "flex", gap: "0.5rem" }}>
+        {currentIndex < questions.length - 1 ? (
+          <button
+            onClick={handleNext}
+            disabled={!showAnswer}
+            style={{
+              padding: "0.5rem 1rem",
+              backgroundColor: "#28a745",
+              color: "white",
+              border: "none",
+              borderRadius: "4px",
+              cursor: showAnswer ? "pointer" : "not-allowed",
+            }}
+          >
+            Next
+          </button>
+        ) : (
+          <button
+            onClick={handleNext}
+            disabled={!showAnswer}
+            style={{
+              padding: "0.5rem 1rem",
+              backgroundColor: "#28a745",
+              color: "white",
+              border: "none",
+              borderRadius: "4px",
+              cursor: showAnswer ? "pointer" : "not-allowed",
+            }}
+          >
+            Finish Session
+          </button>
+        )}
         <button
-          onClick={handleExitSession}
-          style={{ padding: "0.5rem 1rem", backgroundColor: "#dc3545", color: "white", border: "none", borderRadius: "4px", cursor: "pointer", fontSize: "0.85rem" }}
+          onClick={handleExit}
+          style={{
+            padding: "0.5rem 1rem",
+            backgroundColor: "#dc3545",
+            color: "white",
+            border: "none",
+            borderRadius: "4px",
+            cursor: "pointer",
+          }}
         >
           Exit Session
         </button>
-        {isAnswered && (
-          <button
-            onClick={handleNext}
-            style={{ padding: "0.5rem 1rem", backgroundColor: "#007bff", color: "white", border: "none", borderRadius: "4px", cursor: "pointer", fontSize: "0.85rem" }}
-          >
-            {currentIndex + 1 >= questions.length ? "Finish Session" : "Next Question"}
-          </button>
-        )}
       </div>
     </div>
   );
