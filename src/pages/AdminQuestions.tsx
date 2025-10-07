@@ -1,9 +1,12 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { generateClient } from "aws-amplify/api";
-import { getCurrentUser } from "aws-amplify/auth";
+import { getCurrentUser, fetchAuthSession } from "aws-amplify/auth";
 
 export default function AdminQuestions() {
   const [questions, setQuestions] = useState<any[]>([]);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [userEmail, setUserEmail] = useState<string>("");
   const [newQuestion, setNewQuestion] = useState({
     question: "",
     choices: ["", "", "", ""],
@@ -11,9 +14,6 @@ export default function AdminQuestions() {
     explanation: "",
     topic: ""
   });
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
-  const [userEmail, setUserEmail] = useState<string>("");
 
   const client = useMemo(() => generateClient(), []);
 
@@ -22,10 +22,17 @@ export default function AdminQuestions() {
     const checkAuth = async () => {
       try {
         const user = await getCurrentUser();
+        const session = await fetchAuthSession();
+        
+        console.log("=== AUTH DEBUG ===");
+        console.log("User:", user);
+        console.log("Groups in token:", session.tokens?.accessToken?.payload["cognito:groups"]);
+        console.log("Full token payload:", session.tokens?.accessToken?.payload);
+        console.log("=================");
+        
         setIsAuthenticated(true);
         setUserEmail(user.signInDetails?.loginId || user.userId);
-        console.log("User authenticated:", user);
-      } catch (err) {
+      } catch (error) {
         console.log("User not authenticated");
         setIsAuthenticated(false);
       } finally {
@@ -64,10 +71,10 @@ export default function AdminQuestions() {
   }, [client]);
 
   useEffect(() => {
-    if (!isCheckingAuth) {
+    if (isAuthenticated) {
       fetchQuestions();
     }
-  }, [fetchQuestions, isCheckingAuth]);
+  }, [fetchQuestions, isAuthenticated]);
 
   const handleChoiceChange = (index: number, value: string) => {
     const updatedChoices = [...newQuestion.choices];
@@ -149,8 +156,8 @@ export default function AdminQuestions() {
       console.error("Error adding question:", err);
       console.error("Full error details:", JSON.stringify(err, null, 2));
       
-      if (err?.errors?.[0]?.errorType === "Unauthorized") {
-        alert("Authorization Error: You don't have permission to create questions. Please ensure you're signed in with an account that has admin access.");
+      if (err.errors?.[0]?.errorType === "Unauthorized") {
+        alert("Authorization error: You don't have permission to create questions. Please ensure you're signed in with an authorized account.");
       } else {
         alert("Error adding question - check console for details");
       }
@@ -182,55 +189,56 @@ export default function AdminQuestions() {
       console.error("Error deleting question:", err);
       console.error("Full error details:", JSON.stringify(err, null, 2));
       
-      if (err?.errors?.[0]?.errorType === "Unauthorized") {
-        alert("Authorization Error: You don't have permission to delete questions.");
+      if (err.errors?.[0]?.errorType === "Unauthorized") {
+        alert("Authorization error: You don't have permission to delete questions.");
       } else {
         alert("Error deleting question - check console for details");
       }
     }
   };
 
+  // Loading state
   if (isCheckingAuth) {
-    return <div style={{ padding: "2rem" }}>Checking authentication...</div>;
+    return (
+      <div style={{ padding: "2rem", maxWidth: "800px", margin: "0 auto" }}>
+        <p>Checking authentication...</p>
+      </div>
+    );
+  }
+
+  // Not authenticated warning
+  if (!isAuthenticated) {
+    return (
+      <div style={{ padding: "2rem", maxWidth: "800px", margin: "0 auto" }}>
+        <div style={{ 
+          backgroundColor: "#fff3cd", 
+          border: "1px solid #ffc107", 
+          borderRadius: "8px", 
+          padding: "1.5rem",
+          marginBottom: "2rem"
+        }}>
+          <h2 style={{ color: "#856404", marginTop: 0 }}>⚠️ Authentication Required</h2>
+          <p style={{ color: "#856404", marginBottom: "1rem" }}>
+            You need to be signed in to manage questions.
+          </p>
+          <p style={{ color: "#856404", marginBottom: 0 }}>
+            Please sign in to access the admin panel.
+          </p>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div style={{ padding: "2rem", maxWidth: "800px", margin: "0 auto" }}>
-      <h1>Admin - Manage Questions</h1>
-      
-      {/* Authentication Status Banner */}
-      <div style={{ 
-        padding: "1rem", 
-        marginBottom: "1.5rem", 
-        borderRadius: "6px",
-        backgroundColor: isAuthenticated ? "#d4edda" : "#fff3cd",
-        border: `1px solid ${isAuthenticated ? "#c3e6cb" : "#ffeaa7"}`
-      }}>
-        {isAuthenticated ? (
-          <div>
-            <strong style={{ color: "#155724" }}>✓ Authenticated</strong>
-            <p style={{ margin: "0.25rem 0 0 0", color: "#155724" }}>
-              Signed in as: {userEmail}
-            </p>
-          </div>
-        ) : (
-          <div>
-            <strong style={{ color: "#856404" }}>⚠ Not Authenticated</strong>
-            <p style={{ margin: "0.25rem 0 0 0", color: "#856404" }}>
-              You need to sign in to add or delete questions. Please sign in using the authentication page.
-            </p>
-          </div>
-        )}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+        <h1>Admin - Manage Questions</h1>
+        <div style={{ fontSize: "0.9rem", color: "#666" }}>
+          Signed in as: <strong>{userEmail}</strong>
+        </div>
       </div>
       
-      <div style={{ 
-        backgroundColor: "#f5f5f5", 
-        padding: "1.5rem", 
-        borderRadius: "8px", 
-        marginTop: "2rem",
-        opacity: isAuthenticated ? 1 : 0.6,
-        pointerEvents: isAuthenticated ? "auto" : "none"
-      }}>
+      <div style={{ backgroundColor: "#f5f5f5", padding: "1.5rem", borderRadius: "8px", marginTop: "2rem" }}>
         <h2>Add New Question</h2>
         
         <div style={{ marginBottom: "1rem" }}>
@@ -323,16 +331,7 @@ export default function AdminQuestions() {
 
         <button 
           onClick={handleAdd}
-          disabled={!isAuthenticated}
-          style={{ 
-            padding: "0.75rem 2rem", 
-            backgroundColor: isAuthenticated ? "#007bff" : "#ccc", 
-            color: "white", 
-            border: "none", 
-            cursor: isAuthenticated ? "pointer" : "not-allowed", 
-            fontSize: "1rem", 
-            borderRadius: "6px" 
-          }}
+          style={{ padding: "0.75rem 2rem", backgroundColor: "#007bff", color: "white", border: "none", cursor: "pointer", fontSize: "1rem", borderRadius: "6px" }}
         >
           Add Question
         </button>
@@ -374,17 +373,8 @@ export default function AdminQuestions() {
                 </div>
               )}
               <button 
-                onClick={() => handleDelete(q.id)}
-                disabled={!isAuthenticated}
-                style={{ 
-                  padding: "0.5rem 1rem", 
-                  backgroundColor: isAuthenticated ? "#dc3545" : "#ccc", 
-                  color: "white", 
-                  border: "none", 
-                  cursor: isAuthenticated ? "pointer" : "not-allowed", 
-                  marginTop: "1rem", 
-                  borderRadius: "4px" 
-                }}
+                onClick={() => handleDelete(q.id)} 
+                style={{ padding: "0.5rem 1rem", backgroundColor: "#dc3545", color: "white", border: "none", cursor: "pointer", marginTop: "1rem", borderRadius: "4px" }}
               >
                 Delete Question
               </button>
