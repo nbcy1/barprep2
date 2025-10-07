@@ -76,7 +76,7 @@ export default function Home() {
 
       {/* Footer Note */}
       <p style={{ marginTop: "2rem", color: "#fff", fontSize: "0.8rem", textShadow: "1px 1px #000", textAlign: "center" }}>
-        Navigate using the buttons above. Embrace the retro vibes!
+        ©NBCY
       </p>
     </div>
   );
