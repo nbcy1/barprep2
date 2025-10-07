@@ -1,34 +1,43 @@
 import { Link } from 'react-router-dom';
 import { useAuthenticator } from '@aws-amplify/ui-react';
 import { useEffect, useState } from 'react';
+import { Auth } from 'aws-amplify';
 
 export default function Navbar() {
   const { user, signOut } = useAuthenticator((context) => [context.user]);
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    if (!user) return;
+    const fetchGroups = async () => {
+      if (!user) {
+        setIsAdmin(false);
+        return;
+      }
+      try {
+        const session = await Auth.currentSession();
+        const groups = session.getAccessToken().payload['cognito:groups'] || [];
+        setIsAdmin(groups.includes('Admins'));
+      } catch (err) {
+        console.error("Error fetching session groups:", err);
+        setIsAdmin(false);
+      }
+    };
 
-    // Check groups safely
-    const groups: string[] = user?.signInUserSession?.accessToken?.payload?.['cognito:groups'] || [];
-    setIsAdmin(Array.isArray(groups) && groups.includes('Admins'));
+    fetchGroups();
   }, [user]);
 
   return (
     <nav style={{ backgroundColor: "#333", padding: "1rem", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
       <ul style={{ listStyle: "none", display: "flex", gap: "2rem", margin: 0, padding: 0 }}>
         <li><Link to="/" style={{ color: "white", textDecoration: "none" }}>Home</Link></li>
-
         {user && (
           <>
             <li><Link to="/dashboard" style={{ color: "white", textDecoration: "none" }}>Dashboard</Link></li>
             <li><Link to="/history" style={{ color: "white", textDecoration: "none" }}>History</Link></li>
           </>
         )}
-
         <li><Link to="/questions" style={{ color: "white", textDecoration: "none" }}>Questions</Link></li>
         <li><Link to="/quiz" style={{ color: "white", textDecoration: "none" }}>Quiz</Link></li>
-
         {user && (
           <>
             <li><Link to="/account" style={{ color: "white", textDecoration: "none" }}>Account</Link></li>
