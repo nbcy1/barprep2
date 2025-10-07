@@ -15,6 +15,7 @@ export default function Questions() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [sessionCorrect, setSessionCorrect] = useState(0);
+  const [sessionFinished, setSessionFinished] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -61,30 +62,58 @@ export default function Questions() {
   if (error) return <div style={{ padding: "1rem", color: "red" }}>Error: {error}</div>;
   if (questions.length === 0) return <div style={{ padding: "1rem" }}>No questions available.</div>;
 
-  const currentQuestion = questions[currentIndex];
-  const hasAnswered = !!answers[currentQuestion.id];
-  const isCorrect = hasAnswered && answers[currentQuestion.id] === currentQuestion.answer;
-
+  // --- Session control functions ---
   const handleSelect = (choice: string) => {
-    if (hasAnswered) return;
+    const currentQuestion = questions[currentIndex];
+    if (answers[currentQuestion.id]) return;
     setAnswers(prev => ({ ...prev, [currentQuestion.id]: choice }));
-    if (choice === currentQuestion.answer) {
-      setSessionCorrect(prev => prev + 1);
-    }
+    if (choice === currentQuestion.answer) setSessionCorrect(prev => prev + 1);
   };
 
   const handleNext = () => {
     if (currentIndex < questions.length - 1) setCurrentIndex(prev => prev + 1);
-    else alert(`Session complete! Score: ${sessionCorrect} / ${Object.keys(answers).length}`);
+    else setSessionFinished(true);
   };
 
-  // Progress calculation
+  const handleExitSession = () => setSessionFinished(true);
+
+  const handleNewSession = () => {
+    setCurrentIndex(0);
+    setAnswers({});
+    setSessionCorrect(0);
+    setSessionFinished(false);
+  };
+
+  // --- Derived values ---
   const answeredCount = Object.keys(answers).length;
   const progressPercent = answeredCount ? (sessionCorrect / answeredCount) * 100 : 0;
+  const progressColor = progressPercent < 50 ? "#dc3545" : progressPercent < 75 ? "#ffc107" : "#28a745";
 
-  // Dynamic color based on percentage
-  const progressColor =
-    progressPercent < 50 ? "#dc3545" : progressPercent < 75 ? "#ffc107" : "#28a745";
+  // --- Session summary screen ---
+  if (sessionFinished) {
+    return (
+      <div style={{ padding: "1rem", maxWidth: "600px", margin: "0 auto", textAlign: "center" }}>
+        <h2>Session Complete!</h2>
+        <p style={{ fontSize: "1.1rem", margin: "1rem 0" }}>
+          Correct: {sessionCorrect} / {answeredCount} ({Math.round(progressPercent)}%)
+        </p>
+        <div style={{ marginBottom: "1rem", height: "20px", backgroundColor: "#eee", borderRadius: "10px", overflow: "hidden" }}>
+          <div style={{ width: `${progressPercent}%`, height: "100%", backgroundColor: progressColor, transition: "width 0.3s" }} />
+        </div>
+        <button
+          onClick={handleNewSession}
+          style={{ padding: "0.5rem 1.5rem", fontSize: "1rem", backgroundColor: "#28a745", color: "white", border: "none", borderRadius: "6px", cursor: "pointer" }}
+        >
+          Begin New Session
+        </button>
+      </div>
+    );
+  }
+
+  // --- Current question screen ---
+  const currentQuestion = questions[currentIndex];
+  const hasAnswered = !!answers[currentQuestion.id];
+  const isCorrect = hasAnswered && answers[currentQuestion.id] === currentQuestion.answer;
 
   return (
     <div style={{
@@ -95,20 +124,33 @@ export default function Questions() {
       flexDirection: "column",
       height: "90vh"
     }}>
-      {/* Progress Bar */}
+      {/* Persistent Exit Session button */}
+      <button
+        onClick={handleExitSession}
+        style={{
+          alignSelf: "flex-end",
+          padding: "0.25rem 0.5rem",
+          fontSize: "0.85rem",
+          backgroundColor: "#dc3545",
+          color: "white",
+          border: "none",
+          borderRadius: "4px",
+          cursor: "pointer",
+          marginBottom: "0.5rem"
+        }}
+      >
+        Exit Session
+      </button>
+
+      {/* Progress bar */}
       <div style={{ marginBottom: "0.5rem", height: "10px", backgroundColor: "#eee", borderRadius: "5px", overflow: "hidden" }}>
-        <div style={{
-          width: `${progressPercent}%`,
-          height: "100%",
-          backgroundColor: progressColor,
-          transition: "width 0.3s"
-        }} />
+        <div style={{ width: `${progressPercent}%`, height: "100%", backgroundColor: progressColor, transition: "width 0.3s" }} />
       </div>
       <div style={{ fontSize: "0.85rem", marginBottom: "1rem", fontWeight: "bold" }}>
         Correct: {sessionCorrect} / {answeredCount} ({Math.round(progressPercent)}%)
       </div>
 
-      {/* Question Container */}
+      {/* Question container */}
       <div style={{
         flex: 1,
         overflowY: "auto",
@@ -171,7 +213,7 @@ export default function Questions() {
         )}
       </div>
 
-      {/* Next Button */}
+      {/* Next / Finish button */}
       {hasAnswered && (
         <button onClick={handleNext} style={{
           marginTop: "0.5rem",
