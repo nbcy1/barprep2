@@ -93,7 +93,7 @@ export default function Questions() {
   if (sessionFinished) {
     return (
       <div style={{ padding: "1rem", maxWidth: "600px", margin: "0 auto", textAlign: "center" }}>
-        <h2>Session Complete!</h2>
+        <h2>Session Complete</h2>
         <p style={{ fontSize: "1.1rem", margin: "1rem 0" }}>
           Correct: {sessionCorrect} / {answeredCount} ({Math.round(progressPercent)}%)
         </p>
