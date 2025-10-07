@@ -145,6 +145,7 @@ export default function AdminQuestions() {
           }
         `,
         variables: { input },
+        authMode: 'userPool',          // 👈 added
       });
       
       console.log("Question created successfully:", result);
@@ -182,6 +183,7 @@ export default function AdminQuestions() {
           }
         `,
         variables: { input: { id } },
+        authMode: 'userPool',          // 👈 added
       });
       setQuestions(prev => prev.filter(q => q.id !== id));
       alert("Question deleted successfully!");
