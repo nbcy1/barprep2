@@ -75,8 +75,12 @@ export default function Questions() {
 
   const handleNext = () => {
     if (currentIndex < questions.length - 1) setCurrentIndex(prev => prev + 1);
-    else alert(`Session complete! Score: ${sessionCorrect} / ${questions.length}`);
+    else alert(`Session complete! Score: ${sessionCorrect} / ${Object.keys(answers).length}`);
   };
+
+  // Progress calculation
+  const answeredCount = Object.keys(answers).length;
+  const progressPercent = answeredCount ? (sessionCorrect / answeredCount) * 100 : 0;
 
   return (
     <div style={{
@@ -87,9 +91,17 @@ export default function Questions() {
       flexDirection: "column",
       height: "90vh"
     }}>
-      {/* Session Progress */}
-      <div style={{ marginBottom: "1rem" }}>
-        <strong>Answered:</strong> {Object.keys(answers).length} / {questions.length} | <strong>Correct:</strong> {sessionCorrect}
+      {/* Progress Bar */}
+      <div style={{ marginBottom: "0.5rem", height: "10px", backgroundColor: "#eee", borderRadius: "5px", overflow: "hidden" }}>
+        <div style={{
+          width: `${progressPercent}%`,
+          height: "100%",
+          backgroundColor: "#28a745",
+          transition: "width 0.3s"
+        }} />
+      </div>
+      <div style={{ fontSize: "0.85rem", marginBottom: "1rem" }}>
+        Correct: {sessionCorrect} / {answeredCount} answered
       </div>
 
       {/* Question Container */}
