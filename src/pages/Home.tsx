@@ -32,7 +32,7 @@ export default function Home() {
           Welcome to BarPrep!
         </h1>
         <p style={{ fontSize: "0.9rem", marginBottom: "2rem", textShadow: "1px 1px #000" }}>
-          Practice your bar exam questions and quizzes in retro internet style!
+          Prepare for the bar exam with our innovative question and quiz features! Create an account to start tracking your progress.
         </p>
 
         {/* Buttons */}
