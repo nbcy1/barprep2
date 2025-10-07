@@ -14,7 +14,6 @@ export default function Questions() {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [sessionCorrect, setSessionCorrect] = useState(0);
   const [sessionFinished, setSessionFinished] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -62,12 +61,13 @@ export default function Questions() {
   if (error) return <div style={{ padding: "1rem", color: "red" }}>Error: {error}</div>;
   if (questions.length === 0) return <div style={{ padding: "1rem" }}>No questions available.</div>;
 
-  // --- Session control functions ---
+  const currentQuestion = questions[currentIndex];
+  const hasAnswered = !!answers[currentQuestion.id];
+  const isCorrect = hasAnswered && answers[currentQuestion.id] === currentQuestion.answer;
+
   const handleSelect = (choice: string) => {
-    const currentQuestion = questions[currentIndex];
-    if (answers[currentQuestion.id]) return;
+    if (hasAnswered) return;
     setAnswers(prev => ({ ...prev, [currentQuestion.id]: choice }));
-    if (choice === currentQuestion.answer) setSessionCorrect(prev => prev + 1);
   };
 
   const handleNext = () => {
@@ -76,33 +76,78 @@ export default function Questions() {
   };
 
   const handleExitSession = () => setSessionFinished(true);
-
   const handleNewSession = () => {
     setCurrentIndex(0);
     setAnswers({});
-    setSessionCorrect(0);
     setSessionFinished(false);
   };
 
-  // --- Derived values ---
+  // --- Calculate overall and per-topic stats ---
   const answeredCount = Object.keys(answers).length;
-  const progressPercent = answeredCount ? (sessionCorrect / answeredCount) * 100 : 0;
-  const progressColor = progressPercent < 50 ? "#dc3545" : progressPercent < 75 ? "#ffc107" : "#28a745";
+  const correctCount = Object.keys(answers).filter(qId => answers[qId] === questions.find(q => q.id === qId)?.answer).length;
+  const overallPercent = answeredCount ? (correctCount / answeredCount) * 100 : 0;
+  const overallColor = overallPercent < 50 ? "#dc3545" : overallPercent < 75 ? "#ffc107" : "#28a745";
+
+  const topicStats = useMemo(() => {
+    const stats: Record<string, { correct: number; total: number }> = {};
+    Object.keys(answers).forEach(qId => {
+      const question = questions.find(q => q.id === qId);
+      if (!question) return;
+      const topic = question.topic || "General";
+      if (!stats[topic]) stats[topic] = { correct: 0, total: 0 };
+      stats[topic].total += 1;
+      if (answers[qId] === question.answer) stats[topic].correct += 1;
+    });
+    return stats;
+  }, [answers, questions]);
+
+  const wrongQuestions = questions.filter(q => answers[q.id] && answers[q.id] !== q.answer);
 
   // --- Session summary screen ---
   if (sessionFinished) {
     return (
-      <div style={{ padding: "1rem", maxWidth: "600px", margin: "0 auto", textAlign: "center" }}>
-        <h2>Session Complete</h2>
-        <p style={{ fontSize: "1.1rem", margin: "1rem 0" }}>
-          Correct: {sessionCorrect} / {answeredCount} ({Math.round(progressPercent)}%)
-        </p>
-        <div style={{ marginBottom: "1rem", height: "20px", backgroundColor: "#eee", borderRadius: "10px", overflow: "hidden" }}>
-          <div style={{ width: `${progressPercent}%`, height: "100%", backgroundColor: progressColor, transition: "width 0.3s" }} />
+      <div style={{ padding: "1rem", maxWidth: "700px", margin: "0 auto" }}>
+        <h2>Session Complete!</h2>
+
+        {/* Overall stats */}
+        <div style={{ marginBottom: "1rem" }}>
+          <p style={{ fontWeight: "bold", marginBottom: "0.25rem" }}>Correct: {correctCount}/{answeredCount} ({Math.round(overallPercent)}%)</p>
+          <div style={{ height: "15px", backgroundColor: "#eee", borderRadius: "8px", overflow: "hidden" }}>
+            <div style={{ width: `${overallPercent}%`, height: "100%", backgroundColor: overallColor, transition: "width 0.3s" }} />
+          </div>
         </div>
+
+        {/* Per-topic stats */}
+        {Object.entries(topicStats).map(([topic, stat]) => {
+          const percent = stat.total ? (stat.correct / stat.total) * 100 : 0;
+          const color = percent < 50 ? "#dc3545" : percent < 75 ? "#ffc107" : "#28a745";
+          return (
+            <div key={topic} style={{ marginBottom: "0.75rem" }}>
+              <p style={{ fontWeight: "bold", marginBottom: "0.25rem" }}>{topic}: {stat.correct}/{stat.total} ({Math.round(percent)}%)</p>
+              <div style={{ height: "10px", backgroundColor: "#eee", borderRadius: "8px", overflow: "hidden" }}>
+                <div style={{ width: `${percent}%`, height: "100%", backgroundColor: color, transition: "width 0.3s" }} />
+              </div>
+            </div>
+          );
+        })}
+
+        {/* Wrong questions review */}
+        {wrongQuestions.length > 0 && (
+          <div style={{ marginTop: "1rem" }}>
+            <h3>Questions Answered Incorrectly:</h3>
+            {wrongQuestions.map(q => (
+              <div key={q.id} style={{ marginBottom: "1rem", padding: "0.5rem", border: "1px solid #ccc", borderRadius: "6px", backgroundColor: "#fff3cd" }}>
+                <p style={{ fontWeight: "bold", marginBottom: "0.25rem" }}>{q.question}</p>
+                <p style={{ marginBottom: "0.25rem" }}>Your answer: {answers[q.id]}</p>
+                <p style={{ margin: 0 }}>Explanation: {q.explanation}</p>
+              </div>
+            ))}
+          </div>
+        )}
+
         <button
           onClick={handleNewSession}
-          style={{ padding: "0.5rem 1.5rem", fontSize: "1rem", backgroundColor: "#28a745", color: "white", border: "none", borderRadius: "6px", cursor: "pointer" }}
+          style={{ marginTop: "1rem", padding: "0.5rem 1.5rem", fontSize: "1rem", backgroundColor: "#28a745", color: "white", border: "none", borderRadius: "6px", cursor: "pointer" }}
         >
           Begin New Session
         </button>
@@ -111,10 +156,6 @@ export default function Questions() {
   }
 
   // --- Current question screen ---
-  const currentQuestion = questions[currentIndex];
-  const hasAnswered = !!answers[currentQuestion.id];
-  const isCorrect = hasAnswered && answers[currentQuestion.id] === currentQuestion.answer;
-
   return (
     <div style={{
       padding: "1rem",
@@ -144,10 +185,15 @@ export default function Questions() {
 
       {/* Progress bar */}
       <div style={{ marginBottom: "0.5rem", height: "10px", backgroundColor: "#eee", borderRadius: "5px", overflow: "hidden" }}>
-        <div style={{ width: `${progressPercent}%`, height: "100%", backgroundColor: progressColor, transition: "width 0.3s" }} />
+        <div style={{
+          width: `${answeredCount ? (correctCount / answeredCount) * 100 : 0}%`,
+          height: "100%",
+          backgroundColor: answeredCount ? (correctCount / answeredCount) * 100 < 50 ? "#dc3545" : (correctCount / answeredCount) * 100 < 75 ? "#ffc107" : "#28a745" : "#ccc",
+          transition: "width 0.3s"
+        }} />
       </div>
       <div style={{ fontSize: "0.85rem", marginBottom: "1rem", fontWeight: "bold" }}>
-        Correct: {sessionCorrect} / {answeredCount} ({Math.round(progressPercent)}%)
+        Correct: {correctCount}/{answeredCount} ({Math.round(answeredCount ? (correctCount / answeredCount) * 100 : 0)}%)
       </div>
 
       {/* Question container */}
