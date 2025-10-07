@@ -26,7 +26,6 @@ export default function Questions() {
 
   const client = useMemo(() => generateClient(), []);
 
-  // Fetch questions
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
@@ -75,14 +74,12 @@ export default function Questions() {
   const currentQuestion = questions[currentIndex];
   const isAnswered = currentAnswer !== null;
 
-  // Handle answer selection
   const handleChoiceSelect = (choice: string) => {
     if (isAnswered) return;
     setCurrentAnswer(choice);
     setAnsweredQuestions(prev => ({ ...prev, [currentQuestion.id]: choice }));
   };
 
-  // Go to next question or finish session
   const handleNext = () => {
     setCurrentAnswer(null);
     if (currentIndex + 1 >= questions.length) {
@@ -92,12 +89,10 @@ export default function Questions() {
     }
   };
 
-  // Exit session manually
   const handleExitSession = () => {
     setSessionFinished(true);
   };
 
-  // Start a new session
   const handleNewSession = () => {
     setCurrentIndex(0);
     setCurrentAnswer(null);
@@ -105,14 +100,12 @@ export default function Questions() {
     setSessionFinished(false);
   };
 
-  // Calculate overall stats
   const totalAnswered = Object.keys(answeredQuestions).length;
   const totalCorrect = Object.entries(answeredQuestions).filter(
     ([qid, ans]) => questions.find(q => q.id === qid)?.answer === ans
   ).length;
   const overallPercent = totalAnswered > 0 ? Math.round((totalCorrect / totalAnswered) * 100) : 0;
 
-  // Calculate topic stats
   const topicStats: Record<string, TopicStats> = {};
   Object.entries(answeredQuestions).forEach(([qid, ans]) => {
     const q = questions.find(q => q.id === qid);
@@ -122,7 +115,6 @@ export default function Questions() {
     if (ans === q.answer) topicStats[q.topic || "Misc"].correct += 1;
   });
 
-  // Wrong questions
   const wrongQuestions = Object.entries(answeredQuestions)
     .filter(([qid, ans]) => {
       const q = questions.find(q => q.id === qid);
@@ -130,20 +122,16 @@ export default function Questions() {
     })
     .map(([qid]) => questions.find(q => q.id === qid)!);
 
-  // Determine progress bar color
   const getColor = (percent: number) => {
-    if (percent < 50) return "#dc3545"; // red
-    if (percent < 75) return "#ffc107"; // yellow
-    return "#28a745"; // green
+    if (percent < 50) return "#dc3545";
+    if (percent < 75) return "#ffc107";
+    return "#28a745";
   };
 
-  // Session summary screen
   if (sessionFinished) {
     return (
       <div style={{ padding: "2rem", maxWidth: "800px", margin: "0 auto" }}>
         <h1>Session Summary</h1>
-
-        {/* Overall */}
         <div style={{ marginBottom: "2rem" }}>
           <h3>Overall</h3>
           <p>Correct: {totalCorrect}/{totalAnswered} ({overallPercent}%)</p>
@@ -158,8 +146,6 @@ export default function Questions() {
             />
           </div>
         </div>
-
-        {/* Topic stats */}
         {Object.entries(topicStats).map(([topic, stats]) => {
           const percent = Math.round((stats.correct / stats.answered) * 100);
           return (
@@ -179,8 +165,6 @@ export default function Questions() {
             </div>
           );
         })}
-
-        {/* Wrong questions */}
         {wrongQuestions.length > 0 && (
           <div style={{ marginTop: "2rem" }}>
             <h3>Questions Answered Incorrectly</h3>
@@ -197,7 +181,6 @@ export default function Questions() {
             })}
           </div>
         )}
-
         <button
           onClick={handleNewSession}
           style={{
@@ -216,44 +199,36 @@ export default function Questions() {
     );
   }
 
-  // Question view
+  // Session view (all on one page)
   return (
-    <div style={{ padding: "2rem", maxWidth: "800px", margin: "0 auto" }}>
-      <h1>Practice Session</h1>
-
-      {/* Progress */}
-      <p style={{ marginBottom: "0.5rem" }}>Correct: {totalCorrect}/{totalAnswered}</p>
-      <div style={{ backgroundColor: "#eee", borderRadius: "4px", height: "12px", marginBottom: "1.5rem" }}>
-        <div
-          style={{
-            width: totalAnswered > 0 ? `${Math.round((totalCorrect / totalAnswered) * 100)}%` : "0%",
-            height: "100%",
-            borderRadius: "4px",
-            backgroundColor: getColor(totalAnswered > 0 ? Math.round((totalCorrect / totalAnswered) * 100) : 0)
-          }}
-        />
+    <div style={{
+      padding: "2rem",
+      maxWidth: "800px",
+      margin: "0 auto",
+      display: "flex",
+      flexDirection: "column",
+      height: "100vh",
+      justifyContent: "space-between"
+    }}>
+      {/* Stats */}
+      <div>
+        <p style={{ marginBottom: "0.5rem" }}>Correct: {totalCorrect}/{totalAnswered}</p>
+        <div style={{ backgroundColor: "#eee", borderRadius: "4px", height: "12px", marginBottom: "1rem" }}>
+          <div
+            style={{
+              width: totalAnswered > 0 ? `${Math.round((totalCorrect / totalAnswered) * 100)}%` : "0%",
+              height: "100%",
+              borderRadius: "4px",
+              backgroundColor: getColor(totalAnswered > 0 ? Math.round((totalCorrect / totalAnswered) * 100) : 0)
+            }}
+          />
+        </div>
       </div>
 
-      {/* Question */}
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "space-between",
-          padding: "1rem",
-          backgroundColor: "white",
-          borderRadius: "6px",
-          border: "1px solid #ccc",
-          minHeight: "60vh",
-          maxHeight: "80vh",
-          overflow: "hidden"
-        }}
-      >
-        <div style={{ flex: "0 0 auto" }}>
+      {/* Question and choices */}
+      <div style={{ flex: "1 1 auto", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+        <div>
           <p style={{ fontSize: "1.1rem" }}><strong>Q:</strong> {currentQuestion.question}</p>
-        </div>
-
-        <div style={{ flex: "1 1 auto", overflowY: "auto", marginTop: "0.5rem" }}>
           {currentQuestion.choices.map((choice, idx) => {
             let bg = "white";
             let border = "#ccc";
@@ -283,15 +258,15 @@ export default function Questions() {
               </div>
             );
           })}
+          {isAnswered && currentQuestion.explanation && (
+            <p style={{ marginTop: "0.5rem", backgroundColor: "#fff3cd", padding: "0.5rem", borderRadius: "4px" }}>
+              <strong>Explanation:</strong> {currentQuestion.explanation}
+            </p>
+          )}
         </div>
 
-        {isAnswered && currentQuestion.explanation && (
-          <p style={{ marginTop: "0.5rem", backgroundColor: "#fff3cd", padding: "0.5rem", borderRadius: "4px", flex: "0 0 auto" }}>
-            <strong>Explanation:</strong> {currentQuestion.explanation}
-          </p>
-        )}
-
-        <div style={{ marginTop: "1rem", display: "flex", gap: "1rem", flex: "0 0 auto" }}>
+        {/* Buttons */}
+        <div style={{ display: "flex", gap: "1rem", marginTop: "1rem" }}>
           <button
             onClick={handleExitSession}
             style={{ padding: "0.5rem 1.5rem", backgroundColor: "#dc3545", color: "white", border: "none", borderRadius: "4px", cursor: "pointer" }}
