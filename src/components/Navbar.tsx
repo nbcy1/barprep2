@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useAuthenticator } from '@aws-amplify/ui-react';
 import { useEffect, useState } from 'react';
-import { Auth } from 'aws-amplify';
+import Auth from '@aws-amplify/auth'; // Correct import for Vite
 
 export default function Navbar() {
   const { user, signOut } = useAuthenticator((context) => [context.user]);
@@ -12,10 +12,10 @@ export default function Navbar() {
       if (user) {
         try {
           const session = await Auth.currentSession();
-          const groups = session.getIdToken().payload['cognito:groups'] || [];
-          setIsAdmin(groups.includes('Admins'));
+          const groups = session.getIdToken().payload["cognito:groups"] || [];
+          setIsAdmin(groups.includes("Admins"));
         } catch (err) {
-          console.error('Error fetching user groups:', err);
+          console.error("Error checking admin group:", err);
           setIsAdmin(false);
         }
       } else {
@@ -41,7 +41,9 @@ export default function Navbar() {
         {user && (
           <>
             <li><Link to="/account" style={{ color: "white", textDecoration: "none" }}>Account</Link></li>
-            {isAdmin && <li><Link to="/admin-questions" style={{ color: "white", textDecoration: "none" }}>Admin</Link></li>}
+            {isAdmin && (
+              <li><Link to="/admin-questions" style={{ color: "white", textDecoration: "none" }}>Admin</Link></li>
+            )}
           </>
         )}
       </ul>
