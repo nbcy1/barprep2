@@ -48,11 +48,12 @@ export default function Quiz() {
             }
           `,
         });
-        setAllQuestions(result.data.listQuestions.items || []);
+        const items = result.data?.listQuestions?.items || [];
+        setAllQuestions(items);
         setError(null);
       } catch (err) {
         console.error("Error fetching questions:", err);
-        setError("Failed to load questions");
+        setError("Failed to load questions.");
       } finally {
         setLoading(false);
       }
@@ -84,7 +85,7 @@ export default function Quiz() {
     setQuizSubmitted(false);
   };
 
-  // Select answer
+  // Handle answer selection
   const handleChoiceSelect = (questionId: string, choice: string) => {
     if (quizSubmitted) return;
     setAnswers((prev) => ({ ...prev, [questionId]: choice }));
@@ -102,13 +103,14 @@ export default function Quiz() {
   // Save quiz result
   const saveQuizResult = async (correct: number, total: number) => {
     if (!user) return;
+
     try {
       setSaving(true);
       const input = {
-        userId: user.username,
-        score: Math.round((correct / total) * 100), // match schema (Int)
-        total: total,
-        answers: JSON.stringify(answers), // AWSJSON
+        score: Math.round((correct / total) * 100),
+        total,
+        answers: JSON.stringify(answers),
+        createdAt: new Date().toISOString(),
       };
 
       const result = await client.graphql({
@@ -124,11 +126,13 @@ export default function Quiz() {
           }
         `,
         variables: { input },
+        authMode: "AMAZON_COGNITO_USER_POOLS",
       });
 
       console.log("Quiz result saved:", result);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error saving quiz result:", err);
+      console.error("Full error:", JSON.stringify(err, null, 2));
     } finally {
       setSaving(false);
     }
@@ -175,6 +179,7 @@ export default function Quiz() {
             onChange={(e) => setNumQuestions(parseInt(e.target.value) || 1)}
             style={{ width: "100%", padding: "0.5rem", marginBottom: "1rem" }}
           />
+
           <label>Topic:</label>
           <select
             value={selectedTopic}
@@ -188,6 +193,7 @@ export default function Quiz() {
               </option>
             ))}
           </select>
+
           <button
             onClick={startQuiz}
             style={{ width: "100%", padding: "1rem", backgroundColor: "#007bff", color: "white", border: "none", borderRadius: "6px" }}
@@ -236,13 +242,7 @@ export default function Quiz() {
               marginBottom: "2rem",
               padding: "1.5rem",
               backgroundColor: "white",
-              border: quizSubmitted
-                ? isCorrect
-                  ? "2px solid #28a745"
-                  : isIncorrect
-                  ? "2px solid #dc3545"
-                  : "1px solid #ccc"
-                : "1px solid #ccc",
+              border: quizSubmitted ? (isCorrect ? "2px solid #28a745" : isIncorrect ? "2px solid #dc3545" : "1px solid #ccc") : "1px solid #ccc",
               borderRadius: "8px",
             }}
           >
@@ -251,11 +251,13 @@ export default function Quiz() {
               {q.topic && ` - ${q.topic}`}
             </h3>
             <p>{q.question}</p>
+
             {q.choices.map((choice, idx) => {
               const isSelected = userAnswer === choice;
               const isCorrectAnswer = choice === q.answer;
               let backgroundColor = "white";
               let borderColor = "#ccc";
+
               if (quizSubmitted) {
                 if (isCorrectAnswer) {
                   backgroundColor = "#d4edda";
@@ -268,6 +270,7 @@ export default function Quiz() {
                 backgroundColor = "#e7f3ff";
                 borderColor = "#007bff";
               }
+
               return (
                 <div
                   key={idx}
@@ -281,13 +284,7 @@ export default function Quiz() {
                     backgroundColor,
                   }}
                 >
-                  <input
-                    type="radio"
-                    name={`question-${q.id}`}
-                    checked={isSelected}
-                    onChange={() => handleChoiceSelect(q.id, choice)}
-                    disabled={quizSubmitted}
-                  />
+                  <input type="radio" name={`question-${q.id}`} checked={isSelected} onChange={() => handleChoiceSelect(q.id, choice)} disabled={quizSubmitted} />
                   <span>
                     {choice}
                     {quizSubmitted && isCorrectAnswer && " ✓"}
@@ -296,37 +293,24 @@ export default function Quiz() {
                 </div>
               );
             })}
+
             {quizSubmitted && q.explanation && (
-              <div
-                style={{
-                  marginTop: "1rem",
-                  padding: "1rem",
-                  backgroundColor: "#f5f5f5",
-                  borderRadius: "4px",
-                }}
-              >
+              <div style={{ marginTop: "1rem", padding: "1rem", backgroundColor: "#f1f1f1", borderRadius: "4px" }}>
                 <strong>Explanation:</strong>
                 <p>{q.explanation}</p>
-                <p>Correct answer: {q.answer}</p>
               </div>
             )}
           </div>
         );
       })}
 
-      <div style={{ marginTop: "2rem", display: "flex", gap: "1rem", flexWrap: "wrap" }}>
+      <div style={{ marginTop: "2rem", display: "flex", gap: "1rem" }}>
         {!quizSubmitted ? (
-          <button
-            onClick={handleSubmit}
-            style={{ padding: "0.75rem 2rem", backgroundColor: "#007bff", color: "white", border: "none", borderRadius: "6px" }}
-          >
+          <button onClick={handleSubmit} style={{ padding: "0.75rem 2rem", backgroundColor: "#007bff", color: "white", border: "none", borderRadius: "6px" }}>
             Submit Quiz
           </button>
         ) : (
-          <button
-            onClick={handleReset}
-            style={{ padding: "0.75rem 2rem", backgroundColor: "#28a745", color: "white", border: "none", borderRadius: "6px" }}
-          >
+          <button onClick={handleReset} style={{ padding: "0.75rem 2rem", backgroundColor: "#28a745", color: "white", border: "none", borderRadius: "6px" }}>
             Take Another Quiz
           </button>
         )}
