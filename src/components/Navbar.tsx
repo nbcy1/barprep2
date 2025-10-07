@@ -8,22 +8,22 @@ export default function Navbar() {
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    const fetchGroups = async () => {
-      if (!user) {
-        setIsAdmin(false);
-        return;
-      }
-      try {
-        const session = await Auth.currentSession();
-        const groups = session.getAccessToken().payload['cognito:groups'] || [];
-        setIsAdmin(groups.includes('Admins'));
-      } catch (err) {
-        console.error("Error fetching session groups:", err);
+    const checkAdmin = async () => {
+      if (user) {
+        try {
+          const session = await Auth.currentSession();
+          const groups = session.getIdToken().payload['cognito:groups'] || [];
+          setIsAdmin(groups.includes('Admins'));
+        } catch (err) {
+          console.error('Error fetching user groups:', err);
+          setIsAdmin(false);
+        }
+      } else {
         setIsAdmin(false);
       }
     };
 
-    fetchGroups();
+    checkAdmin();
   }, [user]);
 
   return (
@@ -41,13 +41,10 @@ export default function Navbar() {
         {user && (
           <>
             <li><Link to="/account" style={{ color: "white", textDecoration: "none" }}>Account</Link></li>
-            {isAdmin && (
-              <li><Link to="/admin-questions" style={{ color: "white", textDecoration: "none" }}>Admin</Link></li>
-            )}
+            {isAdmin && <li><Link to="/admin-questions" style={{ color: "white", textDecoration: "none" }}>Admin</Link></li>}
           </>
         )}
       </ul>
-
       <div>
         {user ? (
           <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
