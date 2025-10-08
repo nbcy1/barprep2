@@ -9,6 +9,7 @@ type Question @model
   answer: String!
   explanation: String
   topic: String
+  subtopic: String
   createdAt: AWSDateTime
   updatedAt: AWSDateTime
 }
