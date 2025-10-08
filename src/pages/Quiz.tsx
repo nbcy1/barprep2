@@ -117,17 +117,17 @@ export default function Quiz() {
     try {
       setSaving(true);
       
-      // Important: Include userId field which is required by the schema
+      // Save overall quiz result
       const input = {
-        userId: user.userId || user.username, // Required field
-        score: correct, // Store raw score
+        userId: user.userId || user.username,
+        score: correct,
         total,
         answers: JSON.stringify(answers),
       };
 
       console.log("Saving quiz result with input:", input);
 
-      const result = await client.graphql({
+      await client.graphql({
         query: `
           mutation CreateQuizHistory($input: CreateQuizHistoryInput!) {
             createQuizHistory(input: $input) {
@@ -141,10 +141,41 @@ export default function Quiz() {
           }
         `,
         variables: { input },
-        authMode: "userPool" as any, // Use userPool instead of AMAZON_COGNITO_USER_POOLS
+        authMode: "userPool" as any,
       });
 
-      console.log("Quiz result saved successfully:", result);
+      // Save individual question attempts
+      for (const question of quizQuestions) {
+        const userAnswer = answers[question.id];
+        if (userAnswer) {
+          try {
+            await client.graphql({
+              query: `
+                mutation CreateQuestionAttempt($input: CreateQuestionAttemptInput!) {
+                  createQuestionAttempt(input: $input) {
+                    id
+                  }
+                }
+              `,
+              variables: {
+                input: {
+                  questionId: question.id,
+                  userAnswer: userAnswer,
+                  correctAnswer: question.answer,
+                  isCorrect: userAnswer === question.answer,
+                  topic: question.topic || "Uncategorized",
+                  attemptType: "quiz"
+                }
+              },
+              authMode: "userPool" as any
+            });
+          } catch (err) {
+            console.error("Error saving question attempt:", err);
+          }
+        }
+      }
+
+      console.log("Quiz result saved successfully");
     } catch (err) {
       console.error("Error saving quiz result:", err);
       console.error("Full error:", JSON.stringify(err, null, 2));
@@ -245,7 +276,7 @@ export default function Quiz() {
 
         return (
           <div key={q.id} style={{ marginBottom: "2rem", padding: "1.5rem", backgroundColor: "white", border: quizSubmitted ? isCorrect ? "2px solid #28a745" : isIncorrect ? "2px solid #dc3545" : "1px solid #ccc" : "1px solid #ccc", borderRadius: "8px" }}>
-            <h3>Question {index + 1}{q.topic && ` - ${q.topic}`}</h3>
+            <h3>Question {index + 1}</h3>
             <p style={{ fontSize: "1.1rem" }}>{q.question}</p>
             <div style={{ marginTop: "1rem" }}>
               {q.choices.map((choice, idx) => {
