@@ -18,7 +18,7 @@ export default function History() {
   const [quizResults, setQuizResults] = useState<QuizHistory[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuthenticator((ctx) => [ctx.user]);
-  const client = generateClient();
+  const client = useMemo(() => generateClient(), []);
 
   useEffect(() => {
     if (!user) {
