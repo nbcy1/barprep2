@@ -66,6 +66,7 @@ export default function AdminQuestions() {
                 answer
                 explanation
                 topic
+                subtopic
               }
             }
           }
@@ -87,10 +88,15 @@ export default function AdminQuestions() {
     }
   }, [fetchQuestions, isAuthenticated]);
 
-  // Get unique topics from existing questions
+  // Get unique topics and subtopics from existing questions
   const existingTopics = useMemo(() => {
     const topics = new Set(questions.map(q => q.topic).filter(Boolean));
     return Array.from(topics).sort();
+  }, [questions]);
+
+  const existingSubtopics = useMemo(() => {
+    const subtopics = new Set(questions.map(q => q.subtopic).filter(Boolean));
+    return Array.from(subtopics).sort();
   }, [questions]);
 
   const handleChoiceChange = (index: number, value: string, isEditing: boolean = false) => {
@@ -161,6 +167,10 @@ export default function AdminQuestions() {
         input.explanation = newQuestion.explanation;
       }
 
+      if (newQuestion.subtopic.trim()) {
+        input.subtopic = newQuestion.subtopic;
+      }
+
       console.log("Creating question with input:", input);
 
       const result = await client.graphql({
@@ -173,6 +183,8 @@ export default function AdminQuestions() {
               answer
               explanation
               topic
+              subtopic
+              subtopic
             }
           }
         `,
@@ -181,7 +193,7 @@ export default function AdminQuestions() {
       
       console.log("Question created successfully:", result);
       
-      setNewQuestion({ question: "", choices: ["", "", "", ""], answer: "", explanation: "", topic: "" });
+      setNewQuestion({ question: "", choices: ["", "", "", ""], answer: "", explanation: "", topic: "", subtopic: "" });
       fetchQuestions();
       alert("Question added successfully!");
     } catch (err: any) {
@@ -204,7 +216,8 @@ export default function AdminQuestions() {
       choices: [...question.choices],
       answer: question.answer,
       explanation: question.explanation || "",
-      topic: question.topic || ""
+      topic: question.topic || "",
+      subtopic: question.subtopic || ""
     });
   };
 
@@ -216,7 +229,8 @@ export default function AdminQuestions() {
       choices: ["", "", "", ""],
       answer: "",
       explanation: "",
-      topic: ""
+      topic: "",
+      subtopic: ""
     });
   };
 
@@ -253,6 +267,10 @@ export default function AdminQuestions() {
 
       if (editQuestion.explanation.trim()) {
         input.explanation = editQuestion.explanation;
+      }
+
+      if (editQuestion.subtopic.trim()) {
+        input.subtopic = editQuestion.subtopic;
       }
 
       await client.graphql({
@@ -463,6 +481,32 @@ export default function AdminQuestions() {
           </div>
         </div>
 
+        <div style={{ marginBottom: "1rem" }}>
+          <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "bold" }}>
+            Subtopic: <span style={{ color: "#666", fontSize: "0.9rem", fontWeight: "normal" }}>(optional)</span>
+          </label>
+          <div style={{ display: "flex", gap: "0.5rem" }}>
+            <select
+              value={newQuestion.subtopic}
+              onChange={e => setNewQuestion({ ...newQuestion, subtopic: e.target.value })}
+              style={{ flex: 1, padding: "0.5rem" }}
+            >
+              <option value="">Select or enter a subtopic</option>
+              {existingSubtopics.map(subtopic => (
+                <option key={subtopic} value={subtopic}>{subtopic}</option>
+              ))}
+            </select>
+            <span style={{ padding: "0.5rem", color: "#666" }}>or</span>
+            <input
+              type="text"
+              placeholder="Enter new subtopic"
+              value={newQuestion.subtopic && !existingSubtopics.includes(newQuestion.subtopic) ? newQuestion.subtopic : ""}
+              onChange={e => setNewQuestion({ ...newQuestion, subtopic: e.target.value })}
+              style={{ flex: 1, padding: "0.5rem" }}
+            />
+          </div>
+        </div>
+
         <button 
           onClick={handleAdd}
           disabled={!isAuthenticated}
@@ -578,6 +622,30 @@ export default function AdminQuestions() {
                     </div>
                   </div>
 
+                  <div style={{ marginBottom: "1rem" }}>
+                    <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "bold" }}>Subtopic:</label>
+                    <div style={{ display: "flex", gap: "0.5rem" }}>
+                      <select
+                        value={editQuestion.subtopic}
+                        onChange={e => setEditQuestion({ ...editQuestion, subtopic: e.target.value })}
+                        style={{ flex: 1, padding: "0.5rem" }}
+                      >
+                        <option value="">Select or enter a subtopic (optional)</option>
+                        {existingSubtopics.map(subtopic => (
+                          <option key={subtopic} value={subtopic}>{subtopic}</option>
+                        ))}
+                      </select>
+                      <span style={{ padding: "0.5rem", color: "#666" }}>or</span>
+                      <input
+                        type="text"
+                        placeholder="Enter new subtopic"
+                        value={editQuestion.subtopic && !existingSubtopics.includes(editQuestion.subtopic) ? editQuestion.subtopic : ""}
+                        onChange={e => setEditQuestion({ ...editQuestion, subtopic: e.target.value })}
+                        style={{ flex: 1, padding: "0.5rem" }}
+                      />
+                    </div>
+                  </div>
+
                   <div style={{ display: "flex", gap: "1rem" }}>
                     <button 
                       onClick={handleSaveEdit}
@@ -601,6 +669,7 @@ export default function AdminQuestions() {
                   </p>
                   <p style={{ color: "#666", marginBottom: "0.5rem" }}>
                     <strong>Topic:</strong> {q.topic}
+                    {q.subtopic && <span> → <strong>Subtopic:</strong> {q.subtopic}</span>}
                   </p>
                   <div style={{ marginBottom: "0.5rem" }}>
                     <strong>Choices:</strong>
