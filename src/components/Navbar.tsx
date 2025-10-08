@@ -11,7 +11,7 @@ export default function Navbar() {
         {user && (
           <>
             <li><Link to="/dashboard" style={{ color: "white", textDecoration: "none" }}>Dashboard</Link></li>
-            <li><Link to="/history" style={{ color: "white", textDecoration: "none" }}>History</Link></li>
+            <li><Link to="/history" style={{ color: "white", textDecoration: "none" }}>Performance</Link></li>
           </>
         )}
         <li><Link to="/questions" style={{ color: "white", textDecoration: "none" }}>Questions</Link></li>
