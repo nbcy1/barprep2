@@ -7,7 +7,16 @@ export default function AdminQuestions() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [userEmail, setUserEmail] = useState<string>("");
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [newQuestion, setNewQuestion] = useState({
+    question: "",
+    choices: ["", "", "", ""],
+    answer: "",
+    explanation: "",
+    topic: ""
+  });
+  const [editQuestion, setEditQuestion] = useState({
+    id: "",
     question: "",
     choices: ["", "", "", ""],
     answer: "",
@@ -76,23 +85,44 @@ export default function AdminQuestions() {
     }
   }, [fetchQuestions, isAuthenticated]);
 
-  const handleChoiceChange = (index: number, value: string) => {
-    const updatedChoices = [...newQuestion.choices];
-    updatedChoices[index] = value;
-    setNewQuestion({ ...newQuestion, choices: updatedChoices });
+  // Get unique topics from existing questions
+  const existingTopics = useMemo(() => {
+    const topics = new Set(questions.map(q => q.topic).filter(Boolean));
+    return Array.from(topics).sort();
+  }, [questions]);
+
+  const handleChoiceChange = (index: number, value: string, isEditing: boolean = false) => {
+    if (isEditing) {
+      const updatedChoices = [...editQuestion.choices];
+      updatedChoices[index] = value;
+      setEditQuestion({ ...editQuestion, choices: updatedChoices });
+    } else {
+      const updatedChoices = [...newQuestion.choices];
+      updatedChoices[index] = value;
+      setNewQuestion({ ...newQuestion, choices: updatedChoices });
+    }
   };
 
-  const addChoice = () => {
-    setNewQuestion({ ...newQuestion, choices: [...newQuestion.choices, ""] });
+  const addChoice = (isEditing: boolean = false) => {
+    if (isEditing) {
+      setEditQuestion({ ...editQuestion, choices: [...editQuestion.choices, ""] });
+    } else {
+      setNewQuestion({ ...newQuestion, choices: [...newQuestion.choices, ""] });
+    }
   };
 
-  const removeChoice = (index: number) => {
-    if (newQuestion.choices.length <= 2) {
+  const removeChoice = (index: number, isEditing: boolean = false) => {
+    const currentChoices = isEditing ? editQuestion.choices : newQuestion.choices;
+    if (currentChoices.length <= 2) {
       alert("You must have at least 2 choices");
       return;
     }
-    const updatedChoices = newQuestion.choices.filter((_, i) => i !== index);
-    setNewQuestion({ ...newQuestion, choices: updatedChoices });
+    const updatedChoices = currentChoices.filter((_, i) => i !== index);
+    if (isEditing) {
+      setEditQuestion({ ...editQuestion, choices: updatedChoices });
+    } else {
+      setNewQuestion({ ...newQuestion, choices: updatedChoices });
+    }
   };
 
   const handleAdd = async () => {
@@ -145,7 +175,6 @@ export default function AdminQuestions() {
           }
         `,
         variables: { input },
-        authMode: 'userPool',          // 👈 added
       });
       
       console.log("Question created successfully:", result);
@@ -157,10 +186,100 @@ export default function AdminQuestions() {
       console.error("Error adding question:", err);
       console.error("Full error details:", JSON.stringify(err, null, 2));
       
-      if (err.errors?.[0]?.errorType === "Unauthorized") {
-        alert("Authorization error: You don't have permission to create questions. Please ensure you're signed in with an authorized account.");
+      if (err?.errors?.[0]?.errorType === "Unauthorized") {
+        alert("Authorization Error: You don't have permission to create questions. Please ensure you're signed in with an account that has admin access.");
       } else {
         alert("Error adding question - check console for details");
+      }
+    }
+  };
+
+  const handleEdit = (question: any) => {
+    setEditingId(question.id);
+    setEditQuestion({
+      id: question.id,
+      question: question.question,
+      choices: [...question.choices],
+      answer: question.answer,
+      explanation: question.explanation || "",
+      topic: question.topic || ""
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setEditQuestion({
+      id: "",
+      question: "",
+      choices: ["", "", "", ""],
+      answer: "",
+      explanation: "",
+      topic: ""
+    });
+  };
+
+  const handleSaveEdit = async () => {
+    if (!isAuthenticated) {
+      alert("You must be signed in to edit questions.");
+      return;
+    }
+
+    if (!editQuestion.question || !editQuestion.answer || !editQuestion.topic) {
+      alert("Please fill in question, answer, and topic");
+      return;
+    }
+
+    const filledChoices = editQuestion.choices.filter(c => c.trim() !== "");
+    if (filledChoices.length < 2) {
+      alert("Please provide at least 2 choices");
+      return;
+    }
+
+    if (!filledChoices.includes(editQuestion.answer)) {
+      alert("The correct answer must be one of the choices");
+      return;
+    }
+
+    try {
+      const input: any = {
+        id: editQuestion.id,
+        question: editQuestion.question,
+        choices: filledChoices,
+        answer: editQuestion.answer,
+        topic: editQuestion.topic,
+      };
+
+      if (editQuestion.explanation.trim()) {
+        input.explanation = editQuestion.explanation;
+      }
+
+      await client.graphql({
+        query: `
+          mutation UpdateQuestion($input: UpdateQuestionInput!) {
+            updateQuestion(input: $input) {
+              id
+              question
+              choices
+              answer
+              explanation
+              topic
+            }
+          }
+        `,
+        variables: { input },
+      });
+
+      alert("Question updated successfully!");
+      setEditingId(null);
+      fetchQuestions();
+    } catch (err: any) {
+      console.error("Error updating question:", err);
+      console.error("Full error details:", JSON.stringify(err, null, 2));
+      
+      if (err?.errors?.[0]?.errorType === "Unauthorized") {
+        alert("Authorization Error: You don't have permission to update questions.");
+      } else {
+        alert("Error updating question - check console for details");
       }
     }
   };
@@ -183,7 +302,6 @@ export default function AdminQuestions() {
           }
         `,
         variables: { input: { id } },
-        authMode: 'userPool',          // 👈 added
       });
       setQuestions(prev => prev.filter(q => q.id !== id));
       alert("Question deleted successfully!");
@@ -191,56 +309,55 @@ export default function AdminQuestions() {
       console.error("Error deleting question:", err);
       console.error("Full error details:", JSON.stringify(err, null, 2));
       
-      if (err.errors?.[0]?.errorType === "Unauthorized") {
-        alert("Authorization error: You don't have permission to delete questions.");
+      if (err?.errors?.[0]?.errorType === "Unauthorized") {
+        alert("Authorization Error: You don't have permission to delete questions.");
       } else {
         alert("Error deleting question - check console for details");
       }
     }
   };
 
-  // Loading state
   if (isCheckingAuth) {
-    return (
-      <div style={{ padding: "2rem", maxWidth: "800px", margin: "0 auto" }}>
-        <p>Checking authentication...</p>
-      </div>
-    );
-  }
-
-  // Not authenticated warning
-  if (!isAuthenticated) {
-    return (
-      <div style={{ padding: "2rem", maxWidth: "800px", margin: "0 auto" }}>
-        <div style={{ 
-          backgroundColor: "#fff3cd", 
-          border: "1px solid #ffc107", 
-          borderRadius: "8px", 
-          padding: "1.5rem",
-          marginBottom: "2rem"
-        }}>
-          <h2 style={{ color: "#856404", marginTop: 0 }}>⚠️ Authentication Required</h2>
-          <p style={{ color: "#856404", marginBottom: "1rem" }}>
-            You need to be signed in to manage questions.
-          </p>
-          <p style={{ color: "#856404", marginBottom: 0 }}>
-            Please sign in to access the admin panel.
-          </p>
-        </div>
-      </div>
-    );
+    return <div style={{ padding: "2rem" }}>Checking authentication...</div>;
   }
 
   return (
     <div style={{ padding: "2rem", maxWidth: "800px", margin: "0 auto" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-        <h1>Admin - Manage Questions</h1>
-        <div style={{ fontSize: "0.9rem", color: "#666" }}>
-          Signed in as: <strong>{userEmail}</strong>
-        </div>
+      <h1>Admin - Manage Questions</h1>
+      
+      {/* Authentication Status Banner */}
+      <div style={{ 
+        padding: "1rem", 
+        marginBottom: "1.5rem", 
+        borderRadius: "6px",
+        backgroundColor: isAuthenticated ? "#d4edda" : "#fff3cd",
+        border: `1px solid ${isAuthenticated ? "#c3e6cb" : "#ffeaa7"}`
+      }}>
+        {isAuthenticated ? (
+          <div>
+            <strong style={{ color: "#155724" }}>✓ Authenticated</strong>
+            <p style={{ margin: "0.25rem 0 0 0", color: "#155724" }}>
+              Signed in as: {userEmail}
+            </p>
+          </div>
+        ) : (
+          <div>
+            <strong style={{ color: "#856404" }}>⚠ Not Authenticated</strong>
+            <p style={{ margin: "0.25rem 0 0 0", color: "#856404" }}>
+              You need to sign in to add or delete questions. Please sign in using the authentication page.
+            </p>
+          </div>
+        )}
       </div>
       
-      <div style={{ backgroundColor: "#f5f5f5", padding: "1.5rem", borderRadius: "8px", marginTop: "2rem" }}>
+      <div style={{ 
+        backgroundColor: "#f5f5f5", 
+        padding: "1.5rem", 
+        borderRadius: "8px", 
+        marginTop: "2rem",
+        opacity: isAuthenticated ? 1 : 0.6,
+        pointerEvents: isAuthenticated ? "auto" : "none"
+      }}>
         <h2>Add New Question</h2>
         
         <div style={{ marginBottom: "1rem" }}>
@@ -279,7 +396,7 @@ export default function AdminQuestions() {
             </div>
           ))}
           <button 
-            onClick={addChoice}
+            onClick={() => addChoice()}
             style={{ padding: "0.5rem 1rem", marginTop: "0.5rem", backgroundColor: "#28a745", color: "white", border: "none", cursor: "pointer", borderRadius: "4px" }}
           >
             + Add Another Choice
@@ -322,18 +439,40 @@ export default function AdminQuestions() {
           <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "bold" }}>
             Topic: <span style={{ color: "red" }}>*</span>
           </label>
-          <input
-            type="text"
-            placeholder="e.g., Constitutional Law, Contracts"
-            value={newQuestion.topic}
-            onChange={e => setNewQuestion({ ...newQuestion, topic: e.target.value })}
-            style={{ width: "100%", padding: "0.5rem" }}
-          />
+          <div style={{ display: "flex", gap: "0.5rem" }}>
+            <select
+              value={newQuestion.topic}
+              onChange={e => setNewQuestion({ ...newQuestion, topic: e.target.value })}
+              style={{ flex: 1, padding: "0.5rem" }}
+            >
+              <option value="">Select or enter a topic</option>
+              {existingTopics.map(topic => (
+                <option key={topic} value={topic}>{topic}</option>
+              ))}
+            </select>
+            <span style={{ padding: "0.5rem", color: "#666" }}>or</span>
+            <input
+              type="text"
+              placeholder="Enter new topic"
+              value={newQuestion.topic && !existingTopics.includes(newQuestion.topic) ? newQuestion.topic : ""}
+              onChange={e => setNewQuestion({ ...newQuestion, topic: e.target.value })}
+              style={{ flex: 1, padding: "0.5rem" }}
+            />
+          </div>
         </div>
 
         <button 
           onClick={handleAdd}
-          style={{ padding: "0.75rem 2rem", backgroundColor: "#007bff", color: "white", border: "none", cursor: "pointer", fontSize: "1rem", borderRadius: "6px" }}
+          disabled={!isAuthenticated}
+          style={{ 
+            padding: "0.75rem 2rem", 
+            backgroundColor: isAuthenticated ? "#007bff" : "#ccc", 
+            color: "white", 
+            border: "none", 
+            cursor: isAuthenticated ? "pointer" : "not-allowed", 
+            fontSize: "1rem", 
+            borderRadius: "6px" 
+          }}
         >
           Add Question
         </button>
@@ -346,40 +485,175 @@ export default function AdminQuestions() {
         ) : (
           questions.map(q => (
             <div key={q.id} style={{ backgroundColor: "white", padding: "1.5rem", marginBottom: "1rem", border: "1px solid #ddd", borderRadius: "8px" }}>
-              <p style={{ fontWeight: "bold", fontSize: "1.1rem", marginBottom: "0.5rem" }}>
-                {q.question}
-              </p>
-              <p style={{ color: "#666", marginBottom: "0.5rem" }}>
-                <strong>Topic:</strong> {q.topic}
-              </p>
-              <div style={{ marginBottom: "0.5rem" }}>
-                <strong>Choices:</strong>
-                <ul style={{ marginTop: "0.25rem", marginLeft: "1.5rem" }}>
-                  {q.choices?.map((choice: string, idx: number) => (
-                    <li 
-                      key={idx}
+              {editingId === q.id ? (
+                // Edit Mode
+                <>
+                  <div style={{ marginBottom: "1rem" }}>
+                    <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "bold" }}>Question:</label>
+                    <textarea
+                      value={editQuestion.question}
+                      onChange={e => setEditQuestion({ ...editQuestion, question: e.target.value })}
+                      style={{ width: "100%", padding: "0.5rem", minHeight: "80px" }}
+                    />
+                  </div>
+
+                  <div style={{ marginBottom: "1rem" }}>
+                    <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "bold" }}>Choices:</label>
+                    {editQuestion.choices.map((choice, index) => (
+                      <div key={index} style={{ display: "flex", gap: "0.5rem", marginBottom: "0.5rem" }}>
+                        <input
+                          type="text"
+                          value={choice}
+                          onChange={e => handleChoiceChange(index, e.target.value, true)}
+                          style={{ flex: 1, padding: "0.5rem" }}
+                        />
+                        {editQuestion.choices.length > 2 && (
+                          <button 
+                            onClick={() => removeChoice(index, true)}
+                            style={{ padding: "0.5rem 1rem", backgroundColor: "#dc3545", color: "white", border: "none", cursor: "pointer", borderRadius: "4px" }}
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                    <button 
+                      onClick={() => addChoice(true)}
+                      style={{ padding: "0.5rem 1rem", backgroundColor: "#28a745", color: "white", border: "none", cursor: "pointer", borderRadius: "4px" }}
+                    >
+                      + Add Choice
+                    </button>
+                  </div>
+
+                  <div style={{ marginBottom: "1rem" }}>
+                    <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "bold" }}>Correct Answer:</label>
+                    <select
+                      value={editQuestion.answer}
+                      onChange={e => setEditQuestion({ ...editQuestion, answer: e.target.value })}
+                      style={{ width: "100%", padding: "0.5rem" }}
+                    >
+                      <option value="">Select the correct answer</option>
+                      {editQuestion.choices
+                        .filter(c => c.trim() !== "")
+                        .map((choice, index) => (
+                          <option key={index} value={choice}>
+                            {choice}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+
+                  <div style={{ marginBottom: "1rem" }}>
+                    <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "bold" }}>Explanation:</label>
+                    <textarea
+                      value={editQuestion.explanation}
+                      onChange={e => setEditQuestion({ ...editQuestion, explanation: e.target.value })}
+                      style={{ width: "100%", padding: "0.5rem", minHeight: "100px" }}
+                    />
+                  </div>
+
+                  <div style={{ marginBottom: "1rem" }}>
+                    <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "bold" }}>Topic:</label>
+                    <div style={{ display: "flex", gap: "0.5rem" }}>
+                      <select
+                        value={editQuestion.topic}
+                        onChange={e => setEditQuestion({ ...editQuestion, topic: e.target.value })}
+                        style={{ flex: 1, padding: "0.5rem" }}
+                      >
+                        <option value="">Select or enter a topic</option>
+                        {existingTopics.map(topic => (
+                          <option key={topic} value={topic}>{topic}</option>
+                        ))}
+                      </select>
+                      <span style={{ padding: "0.5rem", color: "#666" }}>or</span>
+                      <input
+                        type="text"
+                        placeholder="Enter new topic"
+                        value={editQuestion.topic && !existingTopics.includes(editQuestion.topic) ? editQuestion.topic : ""}
+                        onChange={e => setEditQuestion({ ...editQuestion, topic: e.target.value })}
+                        style={{ flex: 1, padding: "0.5rem" }}
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ display: "flex", gap: "1rem" }}>
+                    <button 
+                      onClick={handleSaveEdit}
+                      style={{ padding: "0.5rem 1rem", backgroundColor: "#28a745", color: "white", border: "none", cursor: "pointer", borderRadius: "4px" }}
+                    >
+                      Save Changes
+                    </button>
+                    <button 
+                      onClick={handleCancelEdit}
+                      style={{ padding: "0.5rem 1rem", backgroundColor: "#6c757d", color: "white", border: "none", cursor: "pointer", borderRadius: "4px" }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </>
+              ) : (
+                // View Mode
+                <>
+                  <p style={{ fontWeight: "bold", fontSize: "1.1rem", marginBottom: "0.5rem" }}>
+                    {q.question}
+                  </p>
+                  <p style={{ color: "#666", marginBottom: "0.5rem" }}>
+                    <strong>Topic:</strong> {q.topic}
+                  </p>
+                  <div style={{ marginBottom: "0.5rem" }}>
+                    <strong>Choices:</strong>
+                    <ul style={{ marginTop: "0.25rem", marginLeft: "1.5rem" }}>
+                      {q.choices?.map((choice: string, idx: number) => (
+                        <li 
+                          key={idx}
+                          style={{ 
+                            color: choice === q.answer ? "#28a745" : "black",
+                            fontWeight: choice === q.answer ? "bold" : "normal"
+                          }}
+                        >
+                          {choice} {choice === q.answer && "✓ (Correct)"}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  {q.explanation && (
+                    <div style={{ marginTop: "0.75rem", padding: "0.75rem", backgroundColor: "#f8f9fa", borderRadius: "4px", borderLeft: "3px solid #007bff" }}>
+                      <strong>Explanation:</strong>
+                      <p style={{ margin: "0.5rem 0 0 0" }}>{q.explanation}</p>
+                    </div>
+                  )}
+                  <div style={{ display: "flex", gap: "1rem", marginTop: "1rem" }}>
+                    <button 
+                      onClick={() => handleEdit(q)}
+                      disabled={!isAuthenticated}
                       style={{ 
-                        color: choice === q.answer ? "#28a745" : "black",
-                        fontWeight: choice === q.answer ? "bold" : "normal"
+                        padding: "0.5rem 1rem", 
+                        backgroundColor: isAuthenticated ? "#007bff" : "#ccc", 
+                        color: "white", 
+                        border: "none", 
+                        cursor: isAuthenticated ? "pointer" : "not-allowed", 
+                        borderRadius: "4px" 
                       }}
                     >
-                      {choice} {choice === q.answer && "✓ (Correct)"}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              {q.explanation && (
-                <div style={{ marginTop: "0.75rem", padding: "0.75rem", backgroundColor: "#f8f9fa", borderRadius: "4px", borderLeft: "3px solid #007bff" }}>
-                  <strong>Explanation:</strong>
-                  <p style={{ margin: "0.5rem 0 0 0" }}>{q.explanation}</p>
-                </div>
+                      Edit Question
+                    </button>
+                    <button 
+                      onClick={() => handleDelete(q.id)}
+                      disabled={!isAuthenticated}
+                      style={{ 
+                        padding: "0.5rem 1rem", 
+                        backgroundColor: isAuthenticated ? "#dc3545" : "#ccc", 
+                        color: "white", 
+                        border: "none", 
+                        cursor: isAuthenticated ? "pointer" : "not-allowed", 
+                        borderRadius: "4px" 
+                      }}
+                    >
+                      Delete Question
+                    </button>
+                  </div>
+                </>
               )}
-              <button 
-                onClick={() => handleDelete(q.id)} 
-                style={{ padding: "0.5rem 1rem", backgroundColor: "#dc3545", color: "white", border: "none", cursor: "pointer", marginTop: "1rem", borderRadius: "4px" }}
-              >
-                Delete Question
-              </button>
             </div>
           ))
         )}
