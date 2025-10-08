@@ -3,7 +3,7 @@ import { useAuthenticator } from '@aws-amplify/ui-react';
 
 export default function Navbar() {
   const { user, signOut } = useAuthenticator((context) => [context.user]);
-
+  
   return (
     <nav style={{ backgroundColor: "#333", padding: "1rem", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
       <ul style={{ listStyle: "none", display: "flex", gap: "2rem", margin: 0, padding: 0 }}>
@@ -26,7 +26,7 @@ export default function Navbar() {
       <div>
         {user ? (
           <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
-            <span style={{ color: "white" }}>Hello, {user.username}</span>
+            <span style={{ color: "white" }}>Hello, {user.signInDetails?.loginId || user.username}</span>
             <button 
               onClick={signOut}
               style={{ padding: "0.5rem 1rem", backgroundColor: "#dc3545", color: "white", border: "none", borderRadius: "4px", cursor: "pointer" }}
@@ -43,4 +43,3 @@ export default function Navbar() {
     </nav>
   );
 }
-
