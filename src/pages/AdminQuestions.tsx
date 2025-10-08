@@ -13,7 +13,8 @@ export default function AdminQuestions() {
     choices: ["", "", "", ""],
     answer: "",
     explanation: "",
-    topic: ""
+    topic: "",
+    subtopic: ""
   });
   const [editQuestion, setEditQuestion] = useState({
     id: "",
@@ -21,7 +22,8 @@ export default function AdminQuestions() {
     choices: ["", "", "", ""],
     answer: "",
     explanation: "",
-    topic: ""
+    topic: "",
+    subtopic: ""
   });
 
   const client = useMemo(() => generateClient(), []);
