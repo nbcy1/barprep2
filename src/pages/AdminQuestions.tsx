@@ -26,7 +26,9 @@ export default function AdminQuestions() {
     subtopic: ""
   });
 
-  const client = useMemo(() => generateClient(), []);
+  const client = useMemo(() => generateClient({
+    authMode: 'userPool'
+  }), []);
 
   // Check authentication status
   useEffect(() => {
@@ -71,6 +73,7 @@ export default function AdminQuestions() {
             }
           }
         `,
+        authMode: 'apiKey' as any,
       });
       console.log("Fetch result:", res);
       const items = res.data?.listQuestions?.items || [];
@@ -322,6 +325,7 @@ export default function AdminQuestions() {
           }
         `,
         variables: { input: { id } },
+        authMode: "userPool" as any,
       });
       setQuestions(prev => prev.filter(q => q.id !== id));
       alert("Question deleted successfully!");
