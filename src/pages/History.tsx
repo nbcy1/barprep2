@@ -188,7 +188,7 @@ export default function History() {
 
   return (
     <div style={{ padding: "2rem", maxWidth: "1400px", margin: "0 auto" }}>
-      <h1 style={{ marginBottom: "2rem" }}>Quiz History & Performance</h1>
+      <h1 style={{ marginBottom: "2rem" }}>Performance Stats</h1>
 
       {/* Stats Cards */}
       {stats && (
