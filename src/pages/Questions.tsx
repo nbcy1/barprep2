@@ -12,9 +12,7 @@ type Question = {
 
 export default function Questions() {
   const [questions, setQuestions] = useState<Question[]>([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [sessionFinished, setSessionFinished] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,23 +37,25 @@ export default function Questions() {
               }
             }
           `,
+          authMode: 'apiKey' as any,
         });
-
+        
+        // Handle null items and filter out invalid questions
         const items = result.data?.listQuestions?.items || [];
-        const validQuestions = items.filter((q): q is Question =>
-          q !== null &&
+        const validQuestions = items.filter((q): q is Question => 
+          q !== null && 
           typeof q.id === 'string' &&
           typeof q.question === 'string' &&
           Array.isArray(q.choices) &&
           typeof q.answer === 'string'
         );
-
+        
         setQuestions(validQuestions);
         setError(null);
       } catch (err) {
         console.error("Error fetching questions:", err);
         setError("Failed to load questions. Please try again later.");
-        setQuestions([]);
+        setQuestions([]); // Set empty array on error
       } finally {
         setLoading(false);
       }
@@ -63,233 +63,155 @@ export default function Questions() {
     fetchQuestions();
   }, [client]);
 
-  const handleChoiceSelect = (questionId: string, choice: string) => {
+  const handleChoiceSelect = async (questionId: string, choice: string) => {
+    if (answers[questionId]) return;
     setAnswers((prev) => ({ ...prev, [questionId]: choice }));
-  };
-
-  const handleNext = () => {
-    if (currentIndex < questions.length - 1) {
-      setCurrentIndex(currentIndex + 1);
-    } else {
-      setSessionFinished(true);
+    
+    // Save the attempt to the database
+    const question = questions.find(q => q.id === questionId);
+    if (question) {
+      try {
+        await client.graphql({
+          query: `
+            mutation CreateQuestionAttempt($input: CreateQuestionAttemptInput!) {
+              createQuestionAttempt(input: $input) {
+                id
+              }
+            }
+          `,
+          variables: {
+            input: {
+              questionId: question.id,
+              userAnswer: choice,
+              correctAnswer: question.answer,
+              isCorrect: choice === question.answer,
+              topic: question.topic || "Uncategorized",
+              attemptType: "practice"
+            }
+          },
+          authMode: "userPool" as any
+        });
+      } catch (err) {
+        // Silently fail if user is not logged in
+        console.log("Could not save attempt (user may not be logged in):", err);
+      }
     }
-  };
-
-  const handleExit = () => {
-    setSessionFinished(true);
-  };
-
-  const handleNewSession = () => {
-    setAnswers({});
-    setCurrentIndex(0);
-    setSessionFinished(false);
-  };
-
-  const totalAnswered = Object.keys(answers).length;
-  const totalCorrect = questions.filter(q => answers[q.id] === q.answer).length;
-
-  // Compute topic-wise stats
-  const topicStats: Record<string, { correct: number; total: number }> = {};
-  questions.forEach(q => {
-    if (!topicStats[q.topic || "Other"]) topicStats[q.topic || "Other"] = { correct: 0, total: 0 };
-    if (answers[q.id]) topicStats[q.topic || "Other"].total++;
-    if (answers[q.id] === q.answer) topicStats[q.topic || "Other"].correct++;
-  });
-
-  // Questions answered incorrectly
-  const wrongQuestions = questions.filter(q => answers[q.id] && answers[q.id] !== q.answer);
-
-  // Progress bar color function
-  const getColor = (percent: number) => {
-    if (percent < 50) return "#dc3545"; // red
-    if (percent < 75) return "#ffc107"; // yellow
-    return "#28a745"; // green
   };
 
   if (loading) return <div style={{ padding: "2rem" }}>Loading questions...</div>;
   if (error) return <div style={{ padding: "2rem", color: "red" }}>Error: {error}</div>;
 
-  if (sessionFinished) {
-    return (
-      <div style={{ padding: "1rem", maxWidth: "800px", margin: "0 auto", fontSize: "0.9rem" }}>
-        <h1>Session Summary</h1>
-
-        {/* Overall Stats */}
-        <p style={{ marginBottom: "0.25rem" }}>Correct: {totalCorrect}/{totalAnswered} ({totalAnswered ? Math.round((totalCorrect/totalAnswered)*100) : 0}%)</p>
-        <div style={{ backgroundColor: "#eee", borderRadius: "4px", height: "10px", marginBottom: "1rem" }}>
-          <div
-            style={{
-              width: totalAnswered ? `${Math.round((totalCorrect/totalAnswered)*100)}%` : "0%",
-              height: "100%",
-              borderRadius: "4px",
-              backgroundColor: getColor(totalAnswered ? Math.round((totalCorrect/totalAnswered)*100) : 0),
-            }}
-          />
-        </div>
-
-        {/* Topic Stats */}
-        {Object.entries(topicStats).map(([topic, stats]) => {
-          const percent = stats.total ? Math.round((stats.correct / stats.total) * 100) : 0;
-          return (
-            <div key={topic} style={{ marginBottom: "0.5rem" }}>
-              <p style={{ marginBottom: "0.25rem", fontWeight: "bold" }}>{topic} - Correct: {stats.correct}/{stats.total} ({percent}%)</p>
-              <div style={{ backgroundColor: "#eee", borderRadius: "4px", height: "8px" }}>
-                <div style={{
-                  width: `${percent}%`,
-                  height: "100%",
-                  borderRadius: "4px",
-                  backgroundColor: getColor(percent),
-                }} />
-              </div>
-            </div>
-          );
-        })}
-
-        {/* Wrong Questions */}
-        {wrongQuestions.length > 0 && (
-          <>
-            <h2>Questions Answered Incorrectly</h2>
-            {wrongQuestions.map((q) => (
-              <div key={q.id} style={{ padding: "0.5rem", marginBottom: "0.5rem", borderRadius: "4px", border: "1px solid #ccc", backgroundColor: "white" }}>
-                <p><strong>Q:</strong> {q.question}</p>
-                <p><strong>Your Answer:</strong> {answers[q.id]}</p>
-                <p><strong>Correct Answer:</strong> {q.answer}</p>
-                {q.explanation && <p><strong>Explanation:</strong> {q.explanation}</p>}
-              </div>
-            ))}
-          </>
-        )}
-
-        <button
-          onClick={handleNewSession}
-          style={{
-            marginTop: "1rem",
-            padding: "0.5rem 1rem",
-            backgroundColor: "#007bff",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            cursor: "pointer",
-          }}
-        >
-          Begin New Session
-        </button>
-      </div>
-    );
-  }
-
-  const currentQuestion = questions[currentIndex];
-  const userAnswer = answers[currentQuestion.id];
-  const isCorrect = userAnswer === currentQuestion.answer;
-  const showAnswer = !!userAnswer;
-
-  const percentCorrect = totalAnswered ? Math.round((totalCorrect/totalAnswered)*100) : 0;
-
   return (
-    <div style={{ padding: "1rem", maxWidth: "800px", margin: "0 auto", fontSize: "0.9rem" }}>
-      {/* Progress */}
-      <div style={{ marginBottom: "1rem" }}>
-        <p style={{ marginBottom: "0.25rem" }}>Correct: {totalCorrect}/{totalAnswered}</p>
-        <div style={{ backgroundColor: "#eee", borderRadius: "4px", height: "10px" }}>
-          <div style={{
-            width: `${percentCorrect}%`,
-            height: "100%",
-            borderRadius: "4px",
-            backgroundColor: getColor(percentCorrect),
-          }} />
-        </div>
-      </div>
+    <div style={{ padding: "2rem", maxWidth: "900px", margin: "0 auto" }}>
+      <h1>Bar Prep Questions</h1>
 
-      {/* Question */}
-      <div style={{ padding: "1rem", border: "1px solid #ccc", borderRadius: "8px", marginBottom: "1rem", backgroundColor: "white" }}>
-        <p style={{ fontWeight: "bold" }}>{currentQuestion.question}</p>
-        {currentQuestion.choices.map((choice, idx) => {
-          let bg = "white";
-          let borderColor = "#ccc";
-          if (showAnswer) {
-            if (choice === currentQuestion.answer) {
-              bg = "#d4edda";
-              borderColor = "#28a745";
-            } else if (choice === userAnswer) {
-              bg = "#fff3cd";
-              borderColor = "#ffc107";
-            }
-          }
-          return (
-            <div
-              key={idx}
-              onClick={() => !showAnswer && handleChoiceSelect(currentQuestion.id, choice)}
-              style={{
-                padding: "0.5rem",
-                marginBottom: "0.5rem",
-                border: `2px solid ${borderColor}`,
-                borderRadius: "4px",
-                cursor: showAnswer ? "default" : "pointer",
-                backgroundColor: bg,
-                transition: "all 0.2s",
-              }}
-            >
-              {choice}
-              {showAnswer && choice === currentQuestion.answer && " ✓"}
-              {showAnswer && choice === userAnswer && choice !== currentQuestion.answer && " ✗"}
-            </div>
-          );
-        })}
+      {questions.length === 0 ? (
+        <p>No questions available yet. Check back later!</p>
+      ) : (
+        <>
+          {questions.map((q, index) => {
+            const hasAnswered = !!answers[q.id];
+            const isCorrect = hasAnswered && answers[q.id] === q.answer;
+            const isIncorrect = hasAnswered && answers[q.id] !== q.answer;
 
-        {showAnswer && currentQuestion.explanation && (
-          <p style={{ marginTop: "0.5rem", fontStyle: "italic" }}>{currentQuestion.explanation}</p>
-        )}
-      </div>
+            return (
+              <div
+                key={q.id}
+                style={{
+                  marginBottom: "2rem",
+                  padding: "1.5rem",
+                  backgroundColor: "white",
+                  border: hasAnswered
+                    ? isCorrect ? "2px solid #28a745" : "2px solid #dc3545"
+                    : "1px solid #ccc",
+                  borderRadius: "8px"
+                }}
+              >
+                <div style={{ marginBottom: "1rem" }}>
+                  <h3 style={{ marginBottom: "0.5rem" }}>
+                    Question {index + 1}
+                    {q.topic && <span style={{ color: "#666", fontSize: "0.9rem", fontWeight: "normal" }}> - {q.topic}</span>}
+                  </h3>
+                  <p style={{ fontSize: "1.1rem" }}>{q.question}</p>
+                </div>
 
-      {/* Buttons */}
-      <div style={{ display: "flex", gap: "0.5rem" }}>
-        {currentIndex < questions.length - 1 ? (
-          <button
-            onClick={handleNext}
-            disabled={!showAnswer}
-            style={{
-              padding: "0.5rem 1rem",
-              backgroundColor: "#28a745",
-              color: "white",
-              border: "none",
-              borderRadius: "4px",
-              cursor: showAnswer ? "pointer" : "not-allowed",
-            }}
-          >
-            Next
-          </button>
-        ) : (
-          <button
-            onClick={handleNext}
-            disabled={!showAnswer}
-            style={{
-              padding: "0.5rem 1rem",
-              backgroundColor: "#28a745",
-              color: "white",
-              border: "none",
-              borderRadius: "4px",
-              cursor: showAnswer ? "pointer" : "not-allowed",
-            }}
-          >
-            Finish Session
-          </button>
-        )}
-        <button
-          onClick={handleExit}
-          style={{
-            padding: "0.5rem 1rem",
-            backgroundColor: "#dc3545",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            cursor: "pointer",
-          }}
-        >
-          Exit Session
-        </button>
-      </div>
+                <div>
+                  {q.choices && q.choices.map((choice, choiceIndex) => {
+                    const isSelected = answers[q.id] === choice;
+                    const isCorrectAnswer = choice === q.answer;
+                    const hasAnswered = !!answers[q.id];
+
+                    let backgroundColor = "white";
+                    let borderColor = "#ccc";
+
+                    if (hasAnswered) {
+                      if (isCorrectAnswer) {
+                        backgroundColor = "#d4edda";
+                        borderColor = "#28a745";
+                      } else if (isSelected) {
+                        backgroundColor = "#f8d7da";
+                        borderColor = "#dc3545";
+                      }
+                    } else if (isSelected) {
+                      backgroundColor = "#e7f3ff";
+                      borderColor = "#007bff";
+                    }
+
+                    return (
+                      <div
+                        key={choiceIndex}
+                        onClick={() => handleChoiceSelect(q.id, choice)}
+                        style={{
+                          padding: "1rem",
+                          marginBottom: "0.5rem",
+                          border: `2px solid ${borderColor}`,
+                          borderRadius: "6px",
+                          cursor: hasAnswered ? "default" : "pointer",
+                          backgroundColor,
+                          transition: "all 0.2s",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "0.75rem"
+                        }}
+                      >
+                        <input
+                          type="radio"
+                          name={`question-${q.id}`}
+                          checked={isSelected}
+                          onChange={() => handleChoiceSelect(q.id, choice)}
+                          disabled={hasAnswered}
+                          style={{ cursor: hasAnswered ? "default" : "pointer" }}
+                        />
+                        <span style={{ flex: 1 }}>
+                          {choice}
+                          {hasAnswered && isCorrectAnswer && " ✓ (Correct Answer)"}
+                          {hasAnswered && isSelected && !isCorrectAnswer && " ✗ (Your Answer)"}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {hasAnswered && q.explanation && (
+                  <div style={{
+                    marginTop: "1rem",
+                    padding: "1rem",
+                    backgroundColor: isCorrect ? "#d4edda" : "#fff3cd",
+                    borderRadius: "4px",
+                    borderLeft: `4px solid ${isCorrect ? "#28a745" : "#ffc107"}`
+                  }}>
+                    <strong style={{ display: "block", marginBottom: "0.5rem" }}>
+                      Explanation:
+                    </strong>
+                    <p style={{ margin: 0 }}>{q.explanation}</p>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </>
+      )}
     </div>
   );
 }
-
 
