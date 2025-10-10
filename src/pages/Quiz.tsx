@@ -47,6 +47,7 @@ export default function Quiz() {
               }
             }
           `,
+          authMode: 'apiKey' as any,
         });
         
         const items = result.data?.listQuestions?.items || [];
